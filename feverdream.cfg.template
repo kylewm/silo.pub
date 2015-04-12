@@ -1,0 +1,17 @@
+import os
+
+DEBUG = True
+
+SQLALCHEMY_DATABASE_URI = 'sqlite:///{}/db.sqlite'.format(
+    os.path.dirname(os.path.realpath(__file__)))
+
+WORDPRESS_CLIENT_ID = '...'
+WORDPRESS_CLIENT_SECRET = '...'
+
+GOOGLE_CLIENT_ID = '...'
+GOOGLE_CLIENT_SECRET = '...'
+
+TUMBLR_CLIENT_KEY = '...'
+TUMBLR_CLIENT_SECRET = '...'
+
+SECRET_KEY = '...'

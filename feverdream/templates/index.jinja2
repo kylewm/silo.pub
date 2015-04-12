@@ -1,0 +1,12 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+<ul>
+  <li><a href="{{ url_for('wordpress.authorize') }}">Authorize Wordpress</a></li>
+  <li><a href="{{ url_for('blogger.authorize') }}">Authorize Blogger</a></li>
+  <li><a href="{{ url_for('tumblr.authorize') }}">Authorize Tumblr</a></li>
+</ul>
+</div>
+
+{% endblock body %}

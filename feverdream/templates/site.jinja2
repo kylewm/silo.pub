@@ -1,0 +1,24 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+  <h1>Micropub endpoint</h1>
+
+  <p>
+    Awesome, Fever Dream is authorized to publish to {{site.domain}}.
+  </p>
+  <p>
+    Now you need to stick some tags on your site's homepage so that Micropub clients
+    know where to find us.
+  </p>
+
+    <code><pre>
+&lt;link rel="micropub" href="http://feverdream.cc/{{site.service}}/{{site.domain}}"&gt;
+&lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
+&lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
+</pre>
+    </code>
+
+</div>
+
+{% endblock body %}
