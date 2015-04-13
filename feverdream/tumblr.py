@@ -131,9 +131,10 @@ def publish(site):
         'body': request.form.get('content'),
     }
 
-    #photo_file = request.files.get('photo')
-    #if photo_file:
-    #    data['type'] = 'photo'
+    photo_file = request.files.get('photo')
+    if photo_file:
+        data['type'] = 'photo'
+        data['data'] = [photo_file.read()]
 
     r = requests.post(CREATE_POST_URL.format(site.domain),
                       data=data, auth=auth)
