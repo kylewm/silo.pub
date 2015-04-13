@@ -127,17 +127,8 @@ def callback():
     db.session.commit()
 
     flash('created {}, {}'.format(account, site))
-    return redirect(url_for('views.index'))
-
-
-@wordpress.route('/' + SERVICE_NAME + '/<domain>')
-def site_page(domain):
-    site = Site.query.filter_by(service=SERVICE_NAME, domain=domain).first()
-    if not site:
-        abort(404)
-
-    return render_template(
-        'site.jinja2', service='Wordpress', site=site)
+    return redirect(url_for('views.site', service=SERVICE_NAME,
+                            domain=site.domain))
 
 
 def publish(site):
