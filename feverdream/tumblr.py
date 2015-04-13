@@ -1,9 +1,9 @@
 from flask import (
     Blueprint, current_app, redirect, url_for, request, flash,
-    render_template, abort
+    render_template, abort, make_response,
 )
 import requests
-from requests_oauthlib import OAuth1Session
+from requests_oauthlib import OAuth1Session, OAuth1
 from feverdream.models import OAuthRequestToken, Account, Site
 from feverdream.extensions import db
 from feverdream import util
@@ -15,7 +15,7 @@ REQUEST_TOKEN_URL = 'https://www.tumblr.com/oauth/request_token'
 AUTHORIZE_URL = 'https://www.tumblr.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://www.tumblr.com/oauth/access_token'
 USER_INFO_URL = 'https://api.tumblr.com/v2/user/info'
-
+CREATE_POST_URL = 'https://api.tumblr.com/v2/blog/{}/post'
 SERVICE_NAME = 'tumblr'
 
 tumblr = Blueprint('tumblr', __name__)
@@ -103,7 +103,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-@tumblr.route('/' + SERVICE_NAME + '/<domain>')
+@tumblr.route('/' + SERVICE_NAME + '/<domain>', methods=['GET', 'POST'])
 def site_page(domain):
     site = Site.query.filter_by(service=SERVICE_NAME, domain=domain).first()
     if not site:
@@ -111,3 +111,36 @@ def site_page(domain):
 
     return render_template(
         'site.jinja2', service='Tumblr', site=site)
+
+
+def publish(site):
+    auth = OAuth1(
+        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
+        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
+        resource_owner_key=site.account.token,
+        resource_owner_secret=site.account.token_secret)
+
+    type = request.form.get('h')
+    data = {
+        # one of: text, photo, quote, link, chat, audio, video
+        'type': 'text',
+        'slug': request.form.get('slug'),
+        'title': request.form.get('name'),
+        'body': request.form.get('content'),
+    }
+
+    #photo_file = request.files.get('photo')
+    #if photo_file:
+    #    data['type'] = 'photo'
+
+    r = requests.post(CREATE_POST_URL.format(site.domain),
+                      data=data, auth=auth)
+
+    if r.status_code // 100 != 2:
+        current_app.logger.warn(
+            'Tumblr publish failed with response %s', r.text)
+        return r.text, r.status_code
+
+    result = make_response('', 201)
+    result.headers = {'Location': r.json().get('URL')}
+    return result

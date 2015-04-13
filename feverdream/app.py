@@ -3,6 +3,7 @@ from feverdream.views import views
 from feverdream.wordpress import wordpress
 from feverdream.blogger import blogger
 from feverdream.tumblr import tumblr
+from feverdream.micropub import micropub
 from feverdream import extensions
 from feverdream.models import *
 
@@ -15,4 +16,5 @@ def create_app(config_path):
     app.register_blueprint(wordpress)
     app.register_blueprint(blogger)
     app.register_blueprint(tumblr)
+    app.register_blueprint(micropub)
     return app

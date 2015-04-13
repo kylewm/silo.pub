@@ -55,3 +55,7 @@ def callback():
     flash('Got Blogger access token: {}. Payload: {}'.format(
         access_token, payload))
     return redirect(url_for('views.index'))
+
+
+def publish(site):
+    pass

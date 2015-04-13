@@ -5,19 +5,26 @@
   <h1>Micropub endpoint</h1>
 
   <p>
-    Awesome, Fever Dream is authorized to publish to {{site.domain}}.
+    Awesome, Fever Dream authorized to publish to
+    {{site.domain}}. We're halfway there. Now let's convince a
+    Micropub client to post to Fever Dream.
   </p>
+
   <p>
-    Now you need to stick some tags on your site's homepage so that Micropub clients
-    know where to find us.
+    In order to use a Micropub client, you'll need to
+    add <code>rel="me"</code> links to support IndieAuth.
+  </p>
+
+  <p>
+    Then you'll need to stick some tags on your site's homepage so that
+    Micropub clients know where to find us.
   </p>
 
     <code><pre>
-&lt;link rel="micropub" href="http://feverdream.cc/{{site.service}}/{{site.domain}}"&gt;
+&lt;link rel="micropub" href="http://feverdream.cc/micropub"&gt;
 &lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
 &lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
-</pre>
-    </code>
+</pre></code>
 
 </div>
 

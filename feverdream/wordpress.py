@@ -15,6 +15,7 @@ API_AUTHORIZE_URL = API_HOST + '/oauth2/authorize'
 API_AUTHENTICATE_URL = API_HOST + '/oauth2/authenticate'
 API_SITE_URL = API_BASE + '/sites/{}'
 API_POST_URL = API_BASE + '/sites/{}/posts/{}'
+API_NEW_POST_URL = API_BASE + '/sites/{}/posts/new'
 API_NEW_LIKE_URL = API_BASE + '/sites/{}/posts/{}/likes/new'
 API_NEW_REPLY_URL = API_BASE + '/sites/{}/posts/{}/replies/new'
 API_ME_URL = API_BASE + '/me'
@@ -137,3 +138,26 @@ def site_page(domain):
 
     return render_template(
         'site.jinja2', service='Wordpress', site=site)
+
+
+def publish(site):
+    type = request.form.get('h')
+
+    r = requests.post(API_NEW_POST_URL.format(site.site_id), data={
+        'title': request.form.get('name'),
+        'content': request.form.get('content'),
+        'excerpt': request.form.get('summary'),
+        'slug': request.form.get('slug'),
+    }, headers={
+        'Authorization': 'Bearer ' + site.token
+    })
+
+    if r.status_code // 100 != 2:
+        err_msg = ('Wordpress publish failed with response <pre>{}</pre>'
+                   .format(r.text))
+        current_app.logger.warn(err_msg)
+        return err_msg, 401
+
+    result = make_response('', 201)
+    result['Location'] = r.json().get('URL')
+    return result
