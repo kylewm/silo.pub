@@ -95,7 +95,6 @@ def callback():
 
         db.session.commit()
         flash('created {}, sites {}'.format(account, account.sites))
-        return redirect(url_for('views.index'))
         return redirect(url_for('views.site', service=SERVICE_NAME,
                                 domain=account.sites[0].domain))
 
