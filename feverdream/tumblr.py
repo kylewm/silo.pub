@@ -94,7 +94,8 @@ def callback():
                 site_info=blog))
 
         db.session.commit()
-        flash('created {}, sites {}'.format(account, account.sites))
+        flash('Authorized {}: {}'.format(account.username, ', '.join(
+            s.domain for s in account.sites)))
         return redirect(url_for('views.site', service=SERVICE_NAME,
                                 domain=account.sites[0].domain))
 

@@ -21,7 +21,7 @@
   </p>
 
     <code><pre>
-&lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint') }}"&gt;
+&lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;
 &lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
 &lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
 </pre></code>

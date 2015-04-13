@@ -126,7 +126,7 @@ def callback():
     db.session.add(account)
     db.session.commit()
 
-    flash('created {}, {}'.format(account, site))
+    flash('Authorized {}: {}'.format(account.username, site.domain))
     return redirect(url_for('views.site', service=SERVICE_NAME,
                             domain=site.domain))
 
