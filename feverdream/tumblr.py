@@ -143,6 +143,9 @@ def publish(site):
             'Tumblr publish failed with response %s', r.text)
         return r.text, r.status_code
 
+    post_info = r.json().get('response', {})\
+                        .get('blog', {}).get('posts', [])[0]
+
     result = make_response('', 201)
-    result.headers = {'Location': r.json().get('URL')}
+    result.headers = {'Location': post_info.get('post_url')}
     return result

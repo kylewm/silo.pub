@@ -150,5 +150,5 @@ def publish(site):
         return err_msg, 401
 
     result = make_response('', 201)
-    result['Location'] = r.json().get('URL')
+    result.headers = {'Location': r.json().get('URL')}
     return result
