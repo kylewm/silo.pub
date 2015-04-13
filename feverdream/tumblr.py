@@ -9,6 +9,7 @@ from feverdream.extensions import db
 from feverdream import util
 import sys
 import html
+import os.path
 
 
 REQUEST_TOKEN_URL = 'https://www.tumblr.com/oauth/request_token'
@@ -130,14 +131,16 @@ def publish(site):
         'title': request.form.get('name'),
         'body': request.form.get('content'),
     }
+    files = None
 
-    photo_file = request.files.get('photo')
-    if photo_file:
-        data['type'] = 'photo'
-        data['data'] = [photo_file.read()]
+    #photo_file = request.files.get('photo')
+    #if photo_file:
+    #    data['type'] = 'photo'
+    #    files = {'data': (os.path.basename(photo_file.filename),
+    #                      photo_file.stream)}
 
     r = requests.post(CREATE_POST_URL.format(site.domain),
-                      data=data, auth=auth)
+                      data=data, files=files, auth=auth)
 
     if r.status_code // 100 != 2:
         current_app.logger.warn(
