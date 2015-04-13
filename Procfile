@@ -1,1 +1,1 @@
-web: uwsgi feverdream-heroku.ini
+web: uwsgi feverdream.ini
