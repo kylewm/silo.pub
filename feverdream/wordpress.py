@@ -75,7 +75,7 @@ def callback():
     current_app.logger.info('WordPress token endpoint repsonse: %r', payload)
     access_token = payload.get('access_token')
     blog_url = payload.get('blog_url')
-    blog_id = payload.get('blog_id')
+    blog_id = str(payload.get('blog_id'))
 
     current_app.logger.info('Fetching user info %s', API_ME_URL)
     r = requests.get(API_ME_URL, headers={
@@ -90,7 +90,7 @@ def callback():
         return redirect(url_for('views.index'))
 
     user_info = r.json()
-    user_id = user_info.get('ID')
+    user_id = str(user_info.get('ID'))
     username = user_info.get('username')
 
     account = Account.query.filter_by(
