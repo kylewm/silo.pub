@@ -6,8 +6,9 @@ from feverdream.blogger import blogger
 from feverdream.tumblr import tumblr
 from feverdream.micropub import micropub
 from feverdream import extensions
-import logging
 from feverdream.models import *
+import logging
+import os
 
 
 def create_app(config_path):
@@ -16,7 +17,7 @@ def create_app(config_path):
 
     if not app.debug:
         app.logger.setLevel(logging.DEBUG)
-        stream_handler = StreamHandler()
+        stream_handler = logging.StreamHandler()
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         stream_handler.setFormatter(formatter)
