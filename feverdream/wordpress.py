@@ -7,6 +7,8 @@ import urllib.parse
 from feverdream.models import Account, Site
 from feverdream.extensions import db
 from feverdream import util
+import os.path
+
 
 API_HOST = 'https://public-api.wordpress.com'
 API_BASE = API_HOST + '/rest/v1.1'
@@ -21,6 +23,8 @@ API_NEW_REPLY_URL = API_BASE + '/sites/{}/posts/{}/replies/new'
 API_ME_URL = API_BASE + '/me'
 API_SITE_URL = API_BASE + '/sites/{}'
 
+# CUSTOMIZE_URL = https://wordpress.com/customize/kylewm.wordpress.com
+
 SERVICE_NAME = 'wordpress'
 
 wordpress = Blueprint('wordpress', __name__)
@@ -28,7 +32,6 @@ wordpress = Blueprint('wordpress', __name__)
 
 @wordpress.route('/wordpress/authorize')
 def authorize():
-    #from feverdream.extensions import db
     redirect_uri = url_for('.callback', _external=True)
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
     return redirect(API_AUTHORIZE_URL + '?' + urllib.parse.urlencode({
@@ -41,7 +44,6 @@ def authorize():
 
 @wordpress.route('/wordpress/callback')
 def callback():
-    #from feverdream.extensions import db
     redirect_uri = url_for('.callback', _external=True)
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
     client_secret = current_app.config['WORDPRESS_CLIENT_SECRET']
@@ -133,27 +135,32 @@ def callback():
 
 def publish(site):
     type = request.form.get('h')
-
     new_post_url = API_NEW_POST_URL.format(site.site_id)
 
-    data = util.trim_nulls({
+    data = {
         'title': request.form.get('name'),
         'content': request.form.get('content'),
         'excerpt': request.form.get('summary'),
         'slug': request.form.get('slug'),
-    })
+    }
 
     files = None
     photo_file = request.files.get('photo')
     if photo_file:
+        # TODO support multiple files
         data['format'] = 'image'
         files = {
-            'media': photo_file,
+            'media[0]': (os.path.basename(photo_file.filename), photo_file),
         }
 
-    r = requests.post(new_post_url, data=data, files=files, headers={
-        'Authorization': 'Bearer ' + site.token
-    })
+    req = requests.Request('POST', new_post_url, data=util.trim_nulls(data),
+                           files=files, headers={
+                               'Authorization': 'Bearer ' + site.token
+                           })
+
+    req = req.prepare()
+    s = requests.Session()
+    r = s.send(req)
 
     if r.status_code // 100 != 2:
         err_msg = ('Wordpress publish failed with response <pre>{}</pre>'
