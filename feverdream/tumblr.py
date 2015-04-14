@@ -17,6 +17,7 @@ AUTHORIZE_URL = 'https://www.tumblr.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://www.tumblr.com/oauth/access_token'
 USER_INFO_URL = 'https://api.tumblr.com/v2/user/info'
 CREATE_POST_URL = 'https://api.tumblr.com/v2/blog/{}/post'
+FETCH_POST_URL = 'https://api.tumblr.com/v2/blog/{}/posts'
 SERVICE_NAME = 'tumblr'
 
 tumblr = Blueprint('tumblr', __name__)
@@ -154,26 +155,50 @@ def publish(site):
         del real_headers['Content-Type']
         del real_headers['Content-Length']
 
+        current_app.logger.info(
+            'uploading photo to tumblr %s, headers=%r',
+            create_post_url, real_headers)
         r = requests.post(create_post_url, data=data, files={
             'data': photo_file,
         }, headers=real_headers)
 
     else:
-        r = requests.post(create_post_url, data=util.trim_nulls({
+        data = util.trim_nulls({
             # one of: text, photo, quote, link, chat, audio, video
             'type': 'text',
             'slug': request.form.get('slug'),
             'title': request.form.get('name'),
             'body': request.form.get('content'),
-        }), auth=auth)
+        })
+        current_app.logger.info(
+            'posting to tumblr %s, data=%r', create_post_url, data)
+        r = requests.post(create_post_url, data=data, auth=auth)
+
+    current_app.logger.info(
+        'response from tumblr %r, data=%r, headers=%r',
+        r, r.content, r.headers)
 
     if r.status_code // 100 != 2:
         current_app.logger.warn(
             'Tumblr publish failed with response %s', r.text)
         return r.text, r.status_code
 
-    result = make_response(r.text, 201)
-    result.headers = {
-        'Location': r.headers.get('Location')
-    }
+    location = None
+    if 'Location' in r.headers:
+        location = r.headers['Location']
+    else:
+        # only get back the id, look up the url
+        post_id = r.json().get('response').get('id')
+        r = requests.get(FETCH_POST_URL.format(site.domain), params={
+            'api_key': current_app.config['TUMBLR_CLIENT_KEY'],
+            'id': post_id,
+        })
+        if r.status_code // 100 == 2:
+            posts = r.json().get('response', {}).get('posts', [])
+            if posts:
+                location = posts[0].get('post_url')
+
+    result = make_response('', 201)
+    if location:
+        result.headers['Location'] = location
     return result
