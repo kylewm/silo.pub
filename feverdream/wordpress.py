@@ -134,12 +134,24 @@ def callback():
 def publish(site):
     type = request.form.get('h')
 
-    r = requests.post(API_NEW_POST_URL.format(site.site_id), data={
+    new_post_url = API_NEW_POST_URL.format(site.site_id)
+
+    data = util.trim_nulls({
         'title': request.form.get('name'),
         'content': request.form.get('content'),
         'excerpt': request.form.get('summary'),
         'slug': request.form.get('slug'),
-    }, headers={
+    })
+
+    files = None
+    photo_file = request.files.get('photo')
+    if photo_file:
+        data['format'] = 'image'
+        files = {
+            'media': photo_file,
+        }
+
+    r = requests.post(new_post_url, data=data, files=files, headers={
         'Authorization': 'Bearer ' + site.token
     })
 
