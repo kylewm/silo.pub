@@ -30,7 +30,7 @@ SERVICE_NAME = 'wordpress'
 wordpress = Blueprint('wordpress', __name__)
 
 
-@wordpress.route('/wordpress/authorize')
+@wordpress.route('/wordpress/authorize', methods=['POST'])
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
     client_id = current_app.config['WORDPRESS_CLIENT_ID']

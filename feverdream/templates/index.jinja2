@@ -1,12 +1,46 @@
 {% extends "base.jinja2" %}
 {% block body %}
 
-<div class="container">
-<ul>
-  <li><a href="{{ url_for('wordpress.authorize') }}">Authorize Wordpress</a></li>
-  <li><a href="{{ url_for('tumblr.authorize') }}">Authorize Tumblr</a></li>
-  <li><strike><a href="{{ url_for('blogger.authorize') }}">Authorize Blogger</a></strike></li>
-</ul>
-</div>
+  <div class="container">
+
+    <p class="lead">
+      <b>Feverdream</b> let's you
+      use <a href="https://indiewebcamp.com/Micropub">Micropub</a>
+      clients like <a href="https://quill.p3k.io">Quill</a> to post to
+      hosted blogs on Wordpress.com, Tumblr, or Blogger.
+    </p>
+    <p>
+      Under the covers, Micropub clients post to Feverdream, and
+      Feverdream proxies that request to your hosted blog's API. To
+      get started, you'll need to give Feverdream post permission on
+      your blog (Don't worry we won't post anything with your
+      permission). Then we'll help you configure your blog for micropub.
+    </p>
+
+    <div class="row">
+      <form method="post" name="tumblr-start" action="{{ url_for('tumblr.authorize') }}" class="signup">
+        <input alt="Sign in with Tumblr" src="{{ url_for('static', filename='tumblr.png') }}" type="image" style="">
+      </form>
+
+      <form method="post" name="wordpress-start" action="{{ url_for('wordpress.authorize') }}" class="signup">
+        <input alt="Sign in with WordPress.com" src="{{ url_for('static', filename='wordpress_com.png') }}" type="image">
+      </form>
+
+      <form method="post" name="blogger-start" action="{{ url_for('blogger.authorize') }}" class="signup">
+        <input alt="Sign in with Blogger (Coming soon)" src="{{ url_for('static', filename='blogger.png') }}" type="image" style="filter: grayscale(100%); opacity: 0.5;" disabled="true">
+      </form>
+    </div>
+
+    <p style="margin-top: 40px;">
+      This is an <a href="https://indiewebcamp.com">indieweb</a>
+      project <a href="http://indiewebcamp.com/irc/2015-04-07#t1428449282044">suggested</a>
+      by <a href="http://www.kevinmarks.com">Kevin
+      Marks</a>, <a href="https://snarfed.org/micropub-for-hosted-blogs">written
+      up</a> by <a href="https://snarfed.org">Ryan Barrett</a>, and
+      <a href="https://github.com/kylewm/feverdream">implemented</a>
+      by <a href="https://kylewm.com">Kyle Mahan</a>.
+    </p>
+
+  </div><!-- .container -->
 
 {% endblock body %}

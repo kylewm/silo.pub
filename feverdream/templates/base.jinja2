@@ -4,14 +4,30 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Fever Dream</title>
+    <title>Feverdream</title>
 
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
     <!-- Optional theme -->
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
     <style>
-      body { padding-top: 70px; padding-bottom: 40px; }
+      body { padding-top: 70px; padding-bottom: 40px;
+      }
+
+
+      form.signup {
+        display: inline;
+      }
+      form.signup input[type="image"] {
+        margin: 0.5em;
+        vertical-align: middle;
+        box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+      }
+      form.signup input[type="image"]:hover {
+        margin: 0.5em;
+        vertical-align: middle;
+        box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      }
     </style>
     {% block head %}
     {% endblock head %}
@@ -26,7 +42,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Fever Dream</a>
+          <a class="navbar-brand" href="/">Feverdream</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">

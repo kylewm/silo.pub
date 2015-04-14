@@ -22,7 +22,7 @@ SERVICE_NAME = 'tumblr'
 tumblr = Blueprint('tumblr', __name__)
 
 
-@tumblr.route('/tumblr/authorize')
+@tumblr.route('/tumblr/authorize', methods=['POST'])
 def authorize():
     callback_uri = url_for('.callback', _external=True)
     try:

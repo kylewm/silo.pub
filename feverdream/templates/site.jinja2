@@ -2,23 +2,21 @@
 {% block body %}
 
 <div class="container">
-  <h1>Micropub endpoint</h1>
-
   <p>
-    Awesome, Fever Dream authorized to publish to
-    {{site.domain}}. We're halfway there. Now let's convince a
-    Micropub client to post to Fever Dream.
+    Awesome, you've authorized Feverdream to publish to
+    {{site.domain}} (Don't worry we won't do anything without your permission). We're halfway there. Now let's convince a
+    Micropub client to post to Feverdream.
   </p>
 
   <p>
     In order to use a Micropub client, you'll need to
-    add <code>rel="me"</code> links to support IndieAuth.
+    add <code>rel="me"</code> links to support IndieAuth, and a few
+    more links to tell micropub clients how to authorize users and publish.
   </p>
 
-  <p>
-    Then you'll need to stick some tags on your site's homepage so that
-    Micropub clients know where to find us.
-  </p>
+<pre>
+&lt;link rel="me" href="https://twitter.com/whoareyou"&gt;@whoareyou&lt;/a&gt;
+</pre>
 
 <pre>
 &lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;

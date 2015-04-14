@@ -14,7 +14,7 @@ API_SELF_URL = 'https://www.googleapis.com/blogger/v3/users/self'
 blogger = Blueprint('blogger', __name__)
 
 
-@blogger.route('/blogger/authorize')
+@blogger.route('/blogger/authorize', methods=['POST'])
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
     return redirect(API_AUTH_URL + '?' + urllib.parse.urlencode({
