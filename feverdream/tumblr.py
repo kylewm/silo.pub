@@ -124,23 +124,48 @@ def publish(site):
         resource_owner_secret=site.account.token_secret)
 
     type = request.form.get('h')
-    data = {
-        # one of: text, photo, quote, link, chat, audio, video
-        'type': 'text',
-        'slug': request.form.get('slug'),
-        'title': request.form.get('name'),
-        'body': request.form.get('content'),
-    }
-    files = None
 
-    #photo_file = request.files.get('photo')
-    #if photo_file:
-    #    data['type'] = 'photo'
-    #    files = {'data': (os.path.basename(photo_file.filename),
-    #                      photo_file.stream)}
+    create_post_url = CREATE_POST_URL.format(site.domain)
+    photo_file = request.files.get('photo')
+    if photo_file:
+        # tumblr signs multipart in a weird way. first sign the request as if
+        # it's application/x-www-form-urlencoded, then recreate the request as
+        # multipart but use the signed headers from before. Mostly cribbed from
+        # https://github.com/tumblr/pytumblr/blob/\
+        # 20e7e38ba6f0734335deee64d4cae45fa8a2ce90/pytumblr/request.py#L101
 
-    r = requests.post(CREATE_POST_URL.format(site.domain),
-                      data=data, files=files, auth=auth)
+        # The API documentation and some of the code samples gave me the
+        # impression that you could also send files just as part of the
+        # form-encoded data but I couldnit make it work
+        # https://www.tumblr.com/docs/en/api/v2#pphoto-posts
+        # https://gist.github.com/codingjester/1649885#file-upload-php-L56
+        data = util.trim_nulls({
+            'type': 'photo',
+            'slug': request.form.get('slug'),
+            'caption': request.form.get('content') or request.form.get('name'),
+        })
+        fake_req = requests.Request('POST', create_post_url, data=data)
+        fake_req = fake_req.prepare()
+        auth(fake_req)
+
+        real_headers = dict(fake_req.headers)
+
+        # manually strip these, requests will recalculate them for us
+        del real_headers['Content-Type']
+        del real_headers['Content-Length']
+
+        r = requests.post(create_post_url, data=data, files={
+            'data': photo_file,
+        }, headers=real_headers)
+
+    else:
+        r = requests.post(create_post_url, data=util.trim_nulls({
+            # one of: text, photo, quote, link, chat, audio, video
+            'type': 'text',
+            'slug': request.form.get('slug'),
+            'title': request.form.get('name'),
+            'body': request.form.get('content'),
+        }), auth=auth)
 
     if r.status_code // 100 != 2:
         current_app.logger.warn(
