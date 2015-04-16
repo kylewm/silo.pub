@@ -122,6 +122,7 @@ def callback():
         account.sites.append(site)
 
     site.site_info = r.json()
+    site.url = blog_url
     site.domain = util.domain_for_url(blog_url)
     site.token = access_token
 

@@ -103,6 +103,7 @@ def callback():
     for blog in blogs:
         account.sites.append(Site(
             service=SERVICE_NAME,
+            url=blog.get('url'),
             domain=util.domain_for_url(blog.get('url')),
             site_id=blog.get('id'),
             site_info=blog))

@@ -11,7 +11,7 @@ import logging
 import os
 
 
-def create_app(config_path):
+def create_app(config_path='../feverdream.cfg'):
     app = Flask(__name__)
     app.config.from_pyfile(config_path)
 

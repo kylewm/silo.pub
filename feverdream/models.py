@@ -55,6 +55,7 @@ class Site(db.Model):
     account_id = db.Column(db.Integer, db.ForeignKey(Account.id))
 
     service = db.Column(db.String(32))  # blogger, tumblr, wordpress, etc.
+    url = db.Column(db.String(512))
     # user-friendly slug for urls
     domain = db.Column(db.String(256))
     # the id used to query apis

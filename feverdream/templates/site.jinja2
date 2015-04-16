@@ -4,26 +4,37 @@
 <div class="container">
   <p>
     Awesome, you've authorized Feverdream to publish to
-    {{site.domain}} (Don't worry we won't do anything without your permission). We're halfway there. Now let's convince a
-    Micropub client to post to Feverdream.
+    {{site.domain}} (Don't worry we won't do anything without your
+    permission). We're halfway there. Now let's convince a Micropub
+    client to post to Feverdream.
+  </p>
+
+  <p>
+    Micropub clients look for links (either &lt;link> or &lt;a>) on
+    your site's homepage that tell them how to get authorization and
+    how to post to the site. The Micropub protocol allows for each
+    step in this process to be handled by a different service, which
+    makes it super easy to write new clients. But it means we have to
+    add a few tags instead of just one.
   </p>
 
   <p>
     In order to use a Micropub client, you'll need to
-    add <code>rel="me"</code> links to support IndieAuth, and a few
-    more links to tell micropub clients how to authorize users and publish.
+    add <code>rel="me"</code> links to support IndieAuth and a few
+    more links to tell micropub clients how to authorize users and
+    publish.
   </p>
 
-<pre>
-&lt;a rel="me" href="https://twitter.com/karathrace"&gt;@karathrace on Twitter&lt;/a&gt;
-&lt;a rel="me" href="https://github.com/starbuck"&gt;starbuck on GitHub&lt;/a&gt;
-</pre>
+  <pre>
+    &lt;a rel="me" href="https://twitter.com/karathrace"&gt;@karathrace on Twitter&lt;/a&gt;
+    &lt;a rel="me" href="https://github.com/starbuck"&gt;starbuck on GitHub&lt;/a&gt;
+  </pre>
 
-<pre>
-&lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;
-&lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
-&lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
-</pre>
+  <pre>
+    &lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
+    &lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
+    &lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;
+  </pre>
 
 </div>
 
