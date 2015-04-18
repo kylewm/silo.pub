@@ -4,7 +4,7 @@ from flask import (
 )
 import requests
 import urllib.parse
-from feverdream.models import Account, Site
+from feverdream.models import Account, Wordpress
 from feverdream.extensions import db
 from feverdream import util
 import os.path
@@ -115,10 +115,10 @@ def callback():
             error_obj.get('error_description')), 'danger')
         return redirect(url_for('views.index'))
 
-    site = Site.query.filter_by(
-        service=SERVICE_NAME, account=account, site_id=blog_id).first()
+    site = Wordpress.query.filter_by(
+        account=account, site_id=blog_id).first()
     if not site:
-        site = Site(service=SERVICE_NAME, site_id=blog_id)
+        site = Wordpress(site_id=blog_id)
         account.sites.append(site)
 
     site.site_info = r.json()

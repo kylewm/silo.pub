@@ -1,0 +1,21 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+  <p>
+    Awesome, you've authorized Feverdream to publish to
+    {{site.domain}} (Don't worry we won't do anything without your
+    permission). We're halfway there. Now let's convince a Micropub
+    client to post to Feverdream.
+  </p>
+
+  <p>
+    Next we'll help add <code>rel=me</code> links that will
+    identify your site to IndieAuth.
+  </p>
+
+  <a href="{{ url_for('.indieauth', domain=site.domain) }}" class="btn btn-primary">Next (Setup IndieAuth)</a>
+
+</div>
+
+{% endblock body %}

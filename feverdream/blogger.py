@@ -3,7 +3,7 @@ from flask import (
 )
 import requests
 import urllib.parse
-from feverdream.models import Account, Site
+from feverdream.models import Account, Blogger
 from feverdream.extensions import db
 from feverdream import util
 import json
@@ -101,8 +101,7 @@ def callback():
     # find or create the sites
     account.sites = []
     for blog in blogs:
-        account.sites.append(Site(
-            service=SERVICE_NAME,
+        account.sites.append(Blogger(
             url=blog.get('url'),
             domain=util.domain_for_url(blog.get('url')),
             site_id=blog.get('id'),

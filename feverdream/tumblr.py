@@ -4,7 +4,7 @@ from flask import (
 )
 import requests
 from requests_oauthlib import OAuth1Session, OAuth1
-from feverdream.models import OAuthRequestToken, Account, Site
+from feverdream.models import OAuthRequestToken, Account, Tumblr
 from feverdream.extensions import db
 from feverdream import util
 import sys
@@ -40,7 +40,7 @@ def authorize():
         db.session.commit()
         return redirect(oauth.authorization_url(AUTHORIZE_URL))
     except:
-        current_app.logger.error('Starting Tumblr authorization')
+        current_app.logger.exception('Starting Tumblr authorization')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
 
@@ -89,8 +89,7 @@ def callback():
 
         account.sites = []
         for blog in user_info.get('blogs', []):
-            account.sites.append(Site(
-                service=SERVICE_NAME,
+            account.sites.append(Tumblr(
                 url=blog.get('url'),
                 domain=util.domain_for_url(blog.get('url')),
                 site_id=blog.get('name'),
@@ -103,14 +102,14 @@ def callback():
                                 domain=account.sites[0].domain))
 
     except:
-        current_app.logger.error('Starting Tumblr authorization')
+        current_app.logger.exception('Starting Tumblr authorization')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
 
 
 @tumblr.route('/' + SERVICE_NAME + '/<domain>', methods=['GET', 'POST'])
 def site_page(domain):
-    site = Site.query.filter_by(service=SERVICE_NAME, domain=domain).first()
+    site = Tumblr.query.filter_by(domain=domain).first()
     if not site:
         abort(404)
 

@@ -1,0 +1,53 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+
+  <p>
+    First we'll set up
+    <a target="_blank" href="{{ site.indieauth_url() }}">IndieAuth</a>
+    by adding one or more <code>rel="me"</code> links to your
+    homepage.  IndieAuth confirms your identity by finding mutual
+    links to and from a social media profile.
+  </p>
+
+  {% block instructions %}
+  {% endblock instructions %}
+
+  {% if mes %}
+    <div class="panel panel-success">
+      <div class="panel-heading">
+        Nice!
+      </div>
+      <div class="panel-body">
+        <p>
+          It looks like you already have some <code>rel=me</code>
+          links configured.
+        </p>
+
+        <ul>
+          {% for me in mes %}
+            <li><a href="{{me}}">{{ me }}</a></li>
+          {% endfor %}
+        </ul>
+
+        <p>
+          Now you can try logging in to
+          <a target="_blank" href="{{site.indieauth_url() }}">IndieAuth.com</a>.
+        </p>
+
+      </div>
+    </div>
+  {% endif %}
+
+  <p>
+    When you're done, we'll add some links to tell Micropub clients
+    how to publish to Feverdream.
+  </p>
+  <a href="{{ url_for('.micropub', domain=site.domain) }}" class="btn btn-primary">Next (Configure Micropub)</a>
+
+</div>
+
+
+
+{% endblock body %}

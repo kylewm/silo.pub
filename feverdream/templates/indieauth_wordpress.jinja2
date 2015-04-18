@@ -1,0 +1,24 @@
+{% extends "indieauth.jinja2" %}
+
+{% block instructions %}
+
+  <p>
+    The easiest way to
+    add <a href="https://microformats.org/wiki/rel-me">rel-me</a>
+    links to your Wordpress.com site, is to add a custom text
+    widget. <a target="_blank" href="{{ site.edit_template_url()
+    }}">Click here to bring up the widget editor</a>. Scroll down and
+    select <em>Text</em>, and choose a location to add the
+    widget. When you add links to the body of the widget, make sure to
+    include the <code>rel="me"</code> attribute on each one.
+  </p>
+
+<div class="panel panel-default">
+  <div class="panel-heading">Text</div>
+  <div class="panel-body">
+&lt;a rel="me" href="https://twitter.com/boomer"&gt;@boomer on Twitter&lt;/a&gt;<br/>
+&lt;a rel="me" href="https://github.com/SharonValerii"&gt;SharonValerii on GitHub&lt;/a&gt;
+  </div>
+</div>
+
+{% endblock instructions %}

@@ -1,0 +1,28 @@
+{% extends "indieauth.jinja2" %}
+
+{% block instructions %}
+
+  <p>
+    There are a few ways to
+    add <a href="https://microformats.org/wiki/rel-me">rel-me</a> links to
+    your Blogger site. Probably the easiest is to add them to your profile
+    introduction. <a target="_blank" href="{{ site.edit_profile_url() }}">Click
+    here edit your profile</a>, and add one or more links to
+    your social media profiles. Make sure to include the <code>rel="me"</code> attribute
+    on each link.
+  </p>
+
+<div class="panel panel-default">
+  <div class="panel-heading">Profile: Introduction</div>
+  <div class="panel-body">
+If it has wings I can fly it.<br/>
+&lt;a rel="me" href="https://twitter.com/karathrace"&gt;@karathrace on Twitter&lt;/a&gt;<br/>
+&lt;a rel="me" href="https://github.com/starbuck"&gt;Starbuck on GitHub&lt;/a&gt;<br/>
+  </div>
+</div>
+
+<p>
+  You can also add links in a widget or <a target="_blank" href="{{ site.edit_template_url() }}">directly to your template's html</a>.
+</p>
+
+{% endblock instructions %}

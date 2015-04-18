@@ -1,0 +1,47 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+
+  <p>
+    Almost there, we just need to add some links to your homepage HTML
+    to tell Micropub clients how to post to your site. When you log in
+    to a client, it will first fetch your homepage and use these links
+    to determine how to authorize you and publish to your site. For
+    our purposse, we'll delegate authorization to indieauth.com and
+    publishing to Feverdream.
+  </p>
+
+  {% block instructions %}
+  {% endblock instructions %}
+
+  {% if authorization_endpoint or token_endpoint or micropub %}
+    <div class="panel panel-success">
+      <div class="panel-heading">
+        Great!
+      </div>
+      <div class="panel-body">
+        <p>
+          It looks like you already have some links configured.
+        </p>
+
+        <ul>
+          <li><code>authorization_endpoint</code>: {{authorization_endpoint}}</a></li>
+          <li><code>token_endpoint</code>: {{token_endpoint}}</a></li>
+          <li><code>micropub</code>: {{micropub}}</a></li>
+        </ul>
+
+      </div>
+    </div>
+  {% endif %}
+
+  <p>
+    When you're all set, <a href="https://quill.p3k.io">Quill</a> is a
+    great micropub client for posting simple notes.
+  </p>
+
+</div>
+
+
+
+{% endblock body %}

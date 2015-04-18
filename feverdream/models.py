@@ -1,6 +1,6 @@
 from feverdream.extensions import db
 import json
-import collections
+import urllib.parse
 
 
 class JsonType(db.TypeDecorator):
@@ -64,5 +64,68 @@ class Site(db.Model):
     token = db.Column(db.String(512))
     token_secret = db.Column(db.String(512))
 
+    __mapper_args__ = {
+        'polymorphic_on': service,
+        'polymorphic_identity': 'unknown'
+    }
+
+    def edit_template_url(self):
+        return None
+
+    def edit_profile_url(self):
+        return None
+
+    def indieauth_url(self):
+        return 'https://indieauth.com/auth?' + urllib.parse.urlencode({
+            'me': self.url,
+            'client_id': 'https://feverdream.herokuapp.com',
+        })
+
     def __repr__(self):
         return 'Site[domain={}]'.format(self.domain)
+
+
+class Blogger(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'blogger'
+    }
+
+    def edit_profile_url(self):
+        return 'https://www.blogger.com/edit-profile.g#widget.aboutme'
+
+    def edit_template_url(self):
+        return 'https://www.blogger.com/blogger.g?blogID={}#template'\
+            .format(self.site_id)
+
+    def __repr__(self):
+        return 'Blogger[domain={}]'.format(self.domain)
+
+
+class Tumblr(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'tumblr'
+    }
+
+    def edit_template_url(self):
+        return 'http://www.tumblr.com/customize/{}'.format(self.site_id)
+
+    def edit_profile_url(self):
+        return self.edit_template_url()
+
+    def __repr__(self):
+        return 'Tumblr[domain={}]'.format(self.domain)
+
+
+class Wordpress(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'wordpress'
+    }
+
+    def edit_template_url(self):
+        return urllib.parse.urljoin(self.url, 'wp-admin/widgets.php')
+
+    def edit_profile_url(self):
+        return self.edit_template_url()
+
+    def __repr__(self):
+        return 'Wordpress[domain={}]'.format(self.domain)

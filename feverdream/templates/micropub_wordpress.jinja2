@@ -1,0 +1,23 @@
+{% extends "micropub.jinja2" %}
+
+{% block instructions %}
+  <p>
+
+    Wordpress.com doesn't let us edit the site's HTML directly, so
+    we'll add the new links in a Text widget. <a target="_blank"
+    href="{{ site.edit_template_url()}}">Click here to edit your
+    site's widgets</a>. Select a new <em>Text</em> widget, or add to
+    an existing one (if you added one for IndieAuth, that's a good
+    choice), and add these links:
+  </p>
+
+<pre>
+&lt;!-- Micropub via Feverdream --&gt;
+&lt;a rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;&lt;/a&gt;
+&lt;a rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;&lt;/a&gt;
+&lt;a rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;&lt;/a&gt;
+&lt;!-- End Micropub configuration --&gt;
+</pre>
+
+
+{% endblock instructions %}

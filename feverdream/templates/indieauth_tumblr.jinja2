@@ -1,0 +1,23 @@
+{% extends "indieauth.jinja2" %}
+
+{% block instructions %}
+
+  <p>
+    To add <a href="https://microformats.org/wiki/rel-me">rel-me</a>
+    links to your Tumblr site, <a target="_blank" href="{{
+    site.edit_template_url() }}">click here to customize your site's
+    appearance</a>. You can either add links directly in your
+    description, or click <em>Edit HTML</em>. Make sure to include
+    the <code>rel="me"</code> attribute on each link.
+  </p>
+
+<div class="panel panel-default">
+  <div class="panel-heading">Description</div>
+  <div class="panel-body">
+Galactica's CAG, advisor to President Roslin,
+&lt;a rel="me" href="https://twitter.com/leeadam"&gt;@leeadama on Twitter&lt;/a&gt;, and
+&lt;a rel="me" href="https://github.com/apollo"&gt;Apollo on GitHub&lt;/a&gt;.
+  </div>
+</div>
+
+{% endblock instructions %}
