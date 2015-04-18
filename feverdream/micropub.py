@@ -5,6 +5,7 @@ import requests
 import urllib.parse
 from feverdream.models import Site, Account
 from feverdream import wordpress, tumblr, blogger
+from sqlalchemy import func
 
 
 PUBLISHERS = {
@@ -59,7 +60,8 @@ def micropub_endpoint():
     # an access token for their api, then we should be good to go
 
     domain = urllib.parse.urlparse(me).netloc
-    site = Site.query.filter_by(domain=domain).first()
+    site = Site.query.filter(
+        func.lower(Site.domain) == domain.lower()).first()
 
     if not site:
         err_msg = 'Could not find an authorization for {}.'.format(domain)
