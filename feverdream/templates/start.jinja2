@@ -14,7 +14,7 @@
     identify your site to IndieAuth.
   </p>
 
-  <a href="{{ url_for('.indieauth', domain=site.domain) }}" class="btn btn-primary">Next (Setup IndieAuth)</a>
+  <a href="{{ url_for('.indieauth', service=site.service, domain=site.domain) }}" class="btn btn-primary">Next (Setup IndieAuth)</a>
 
 </div>
 

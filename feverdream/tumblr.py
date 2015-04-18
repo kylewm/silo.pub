@@ -98,23 +98,13 @@ def callback():
         db.session.commit()
         flash('Authorized {}: {}'.format(account.username, ', '.join(
             s.domain for s in account.sites)))
-        return redirect(url_for('views.site', service=SERVICE_NAME,
-                                domain=account.sites[0].domain))
+        return redirect(url_for('views.account', service=SERVICE_NAME,
+                                username=account.username))
 
     except:
         current_app.logger.exception('Starting Tumblr authorization')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
-
-
-@tumblr.route('/' + SERVICE_NAME + '/<domain>', methods=['GET', 'POST'])
-def site_page(domain):
-    site = Tumblr.query.filter_by(domain=domain).first()
-    if not site:
-        abort(404)
-
-    return render_template(
-        'site.jinja2', service='Tumblr', site=site)
 
 
 def publish(site):

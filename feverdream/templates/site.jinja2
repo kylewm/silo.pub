@@ -9,47 +9,6 @@
     client to post to Feverdream.
   </p>
 
-  <p>
-    Micropub clients look for links (either &lt;link> or &lt;a>) on
-    your site's homepage that tell them how to get authorization and
-    how to post to the site. The Micropub protocol allows for each
-    step in this process to be handled by a different service, which
-    makes it super easy to write new clients. But it means we have to
-    add a few tags instead of just one.
-  </p>
-
-  <div id="indieauth-instructions">
-    <p>
-      First we'll add support
-      for <a href="https://indieauth.com">IndieAuth</a> if you don't
-      already have it by adding one or more <code>rel="me"</code>
-      links to your homepage.
-    </p>
-    {% block indieauth %}
-<pre>
-&lt;a rel="me" href="https://twitter.com/karathrace"&gt;@karathrace on Twitter&lt;/a&gt;
-&lt;a rel="me" href="https://github.com/starbuck"&gt;starbuck on GitHub&lt;/a&gt;
-</pre>
-    {% endblock indieauth %}
-  </div>
-
-  <div id="indieauth-success" style="display:none">
-
-  </div>
-
-  <div id="micropub-instructions">
-    <p>Next we'll add a few tags to tell micropub clients which
-    services to use for authorization and publishing.</p>
-<pre>
-&lt;link rel="authorization_endpoint" href="https://indieauth.com/auth"&gt;
-&lt;link rel="token_endpoint" href="https://tokens.indieauth.com/token"&gt;
-&lt;link rel="micropub" href="{{ url_for('micropub.micropub_endpoint', _external=True) }}"&gt;
-</pre>
-  </div>
-
-  <div id="micropub-success" style="display:none">
-
-  </div>
 
 </div>
 

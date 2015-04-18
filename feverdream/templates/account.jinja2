@@ -1,0 +1,16 @@
+{% extends "base.jinja2" %}
+{% block body %}
+
+<div class="container">
+  <p>
+    Great, now choose the blog that you'd like to set up (you can set up multiple sites for the same account):
+  </p>
+
+  <ul>
+  {% for site in account.sites %}
+    <li><a href="{{url_for('.site', service=site.service, domain=site.domain)}}">{{ site.domain }}</a></li>
+  {% endfor %}
+  </ul>
+</div>
+
+{% endblock body %}

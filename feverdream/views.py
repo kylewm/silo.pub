@@ -1,5 +1,7 @@
-from flask import Blueprint, render_template, abort, jsonify, redirect, url_for, flash
-from feverdream.models import Site
+from flask import (
+    Blueprint, render_template, abort, jsonify, redirect, url_for, flash,
+)
+from feverdream.models import Account, Site
 import requests
 from bs4 import BeautifulSoup
 
@@ -12,14 +14,27 @@ def index():
     return render_template('index.jinja2')
 
 
-@views.route('/<domain>/')
-def site(domain):
-    return redirect(url_for('.start', domain=domain))
+@views.route('/<service>/user/<username>/')
+def account(service, username):
+    account = Account.query.filter_by(
+        service=service, username=username).first()
+    if not account:
+        abort(404)
+
+    return render_template(
+        'account.jinja2', account=account)
 
 
-@views.route('/<domain>/start/')
-def start(domain):
-    site = Site.query.filter_by(domain=domain).first()
+@views.route('/<service>/site/<domain>/')
+def site(service, domain):
+    return redirect(url_for(
+        '.start', service=service, domain=domain))
+
+
+@views.route('/<service>/site/<domain>/start/')
+def start(service, domain):
+    site = Site.query.filter_by(
+        service=service, domain=domain).first()
     if not site:
         abort(404)
 
@@ -27,9 +42,10 @@ def start(domain):
         'start.jinja2', site=site)
 
 
-@views.route('/<domain>/indieauth/')
-def indieauth(domain):
-    site = Site.query.filter_by(domain=domain).first()
+@views.route('/<service>/site/<domain>/indieauth/')
+def indieauth(service, domain):
+    site = Site.query.filter_by(
+        service=service, domain=domain).first()
     if not site:
         abort(404)
 
@@ -48,9 +64,10 @@ def indieauth(domain):
         site=site, mes=mes)
 
 
-@views.route('/<domain>/micropub/')
-def micropub(domain):
-    site = Site.query.filter_by(domain=domain).first()
+@views.route('/<service>/site/<domain>/micropub/')
+def micropub(service, domain):
+    site = Site.query.filter_by(
+        service=service, domain=domain).first()
     if not site:
         abort(404)
 

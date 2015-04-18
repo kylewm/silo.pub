@@ -73,8 +73,7 @@ def callback():
         return redirect(url_for('views.index'))
 
     payload = r.json()
-    user_id = payload.get('id')
-    username = payload.get('displayName')
+    username = user_id = payload.get('id')
 
     # find or create the account
     account = Account.query.filter_by(
@@ -110,8 +109,10 @@ def callback():
     db.session.commit()
     flash('Authorized {}: {}'.format(account.username, ', '.join(
         s.domain for s in account.sites)))
-    return redirect(url_for('views.site', service=SERVICE_NAME,
-                            domain=account.sites[0].domain))
+
+    return redirect(url_for('views.account',
+                            service=SERVICE_NAME,
+                            username=account.username))
 
 
 def publish(site):
