@@ -6,6 +6,7 @@ import urllib.parse
 from feverdream.models import Account, Blogger
 from feverdream.extensions import db
 from feverdream import util
+from feverdream import micropub
 import json
 
 
@@ -115,6 +116,7 @@ def callback():
                             username=account.username))
 
 
+@micropub.publisher(SERVICE_NAME)
 def publish(site):
     """
     Request:
@@ -164,7 +166,7 @@ def publish(site):
 
     post_data = util.trim_nulls({
         'title': request.form.get('name'),
-        'content': request.form.get('content'),
+        'content': micropub.get_complex_content(),
     })
 
     r = requests.post(create_post_url, headers={

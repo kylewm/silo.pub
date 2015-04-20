@@ -4,17 +4,20 @@ from flask import (
 import requests
 import urllib.parse
 from feverdream.models import Site, Account
-from feverdream import wordpress, tumblr, blogger
+from feverdream import util
 from sqlalchemy import func
 
 
-PUBLISHERS = {
-    'wordpress': wordpress.publish,
-    'tumblr': tumblr.publish,
-    'blogger': blogger.publish,
-}
+PUBLISHERS = {}
 
 micropub = Blueprint('micropub', __name__)
+
+
+def publisher(service):
+    def decorator(f):
+        PUBLISHERS[service] = f
+        return f
+    return decorator
 
 
 @micropub.route('/micropub', methods=['GET', 'POST'])
@@ -70,3 +73,21 @@ def micropub_endpoint():
 
     current_app.logger.info('Success! Publishing to %s', site)
     return PUBLISHERS[site.service](site)
+
+
+def get_complex_content():
+    lines = []
+    for prop, headline in [('in-reply-to', 'In reply to'),
+                           ('like-of', 'Liked'),
+                           ('repost-of', 'Reposted'),
+                           ('bookmark-of', 'Bookmarked')]:
+        target = request.form.get(prop)
+        if target:
+            lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
+                headline, prop, target, util.prettify_url(target)))
+
+    content = request.form.get('content')
+    if content:
+        lines.append(request.form.get('content'))
+
+    return '\n'.join(lines)

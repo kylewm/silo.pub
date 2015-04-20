@@ -1,15 +1,14 @@
 from flask import (
-    Blueprint, current_app, redirect, url_for, request, flash,
-    render_template, abort, make_response,
+    Blueprint, current_app, redirect, url_for, request, flash, make_response,
 )
 import requests
 from requests_oauthlib import OAuth1Session, OAuth1
 from feverdream.models import OAuthRequestToken, Account, Tumblr
 from feverdream.extensions import db
 from feverdream import util
+from feverdream import micropub
 import sys
 import html
-import os.path
 
 
 REQUEST_TOKEN_URL = 'https://www.tumblr.com/oauth/request_token'
@@ -107,6 +106,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
+@micropub.publisher(SERVICE_NAME)
 def publish(site):
     auth = OAuth1(
         client_key=current_app.config['TUMBLR_CLIENT_KEY'],
@@ -158,7 +158,7 @@ def publish(site):
             'type': 'text',
             'slug': request.form.get('slug'),
             'title': request.form.get('name'),
-            'body': request.form.get('content'),
+            'body': micropub.get_complex_content(),
         })
         current_app.logger.info(
             'posting to tumblr %s, data=%r', create_post_url, data)
