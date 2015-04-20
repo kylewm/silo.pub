@@ -138,9 +138,23 @@ def publish(site):
     type = request.form.get('h')
     new_post_url = API_NEW_POST_URL.format(site.site_id)
 
+    lines = []
+    for prop, headline in [('in-reply-to', 'In reply to'),
+                           ('like-of', 'Liked'),
+                           ('repost-of', 'Reposted'),
+                           ('bookmark-of', 'Bookmarked')]:
+        target = request.form.get(prop)
+        if target:
+            lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
+                headline, prop, target, util.prettify_url(target)))
+
+    content = request.form.get('content')
+    if content:
+        lines.append(request.form.get('content'))
+
     data = {
         'title': request.form.get('name'),
-        'content': request.form.get('content'),
+        'content': '\n'.join(lines),
         'excerpt': request.form.get('summary'),
         'slug': request.form.get('slug'),
     }

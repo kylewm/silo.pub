@@ -7,6 +7,14 @@ def domain_for_url(url):
     return p.netloc
 
 
+def prettify_url(url):
+    p = urllib.parse.urlparse(url)
+    pretty = p.netloc
+    if p.path:
+        pretty += p.path
+    return pretty.rstrip('/')
+
+
 def trim_nulls(obj):
     if isinstance(obj, list):
         return [trim_nulls(v) for v in obj if trim_nulls(v)]
