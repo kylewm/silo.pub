@@ -1,6 +1,4 @@
-from flask import (
-    Blueprint, render_template, abort, jsonify, redirect, url_for, flash,
-)
+from flask import Blueprint, render_template, abort, redirect, url_for, flash
 from feverdream.models import Account, Site
 import requests
 from bs4 import BeautifulSoup

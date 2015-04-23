@@ -1,7 +1,6 @@
-from flask import (
-    Blueprint, url_for, make_response, current_app, request, redirect, flash,
-    render_template, abort
-)
+from flask import (Blueprint, url_for, make_response, current_app, request,
+                   redirect, flash, abort)
+from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 import requests
 import urllib.parse
 from feverdream.models import Account, Wordpress
@@ -9,7 +8,6 @@ from feverdream.extensions import db
 from feverdream import util
 from feverdream import micropub
 import os.path
-
 
 API_HOST = 'https://public-api.wordpress.com'
 API_BASE = API_HOST + '/rest/v1.1'
@@ -35,11 +33,12 @@ wordpress = Blueprint('wordpress', __name__)
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
+
     return redirect(API_AUTHORIZE_URL + '?' + urllib.parse.urlencode({
         'client_id': client_id,
         'redirect_uri': redirect_uri,
         'response_type': 'code',
-        'state': 'TODO-CSRF',
+        'state': generate_csrf(),
     }))
 
 
@@ -52,12 +51,15 @@ def callback():
     code = request.args.get('code')
     error = request.args.get('error')
     error_desc = request.args.get('error_description')
-    state = request.args.get('state')  # TODO handle CSRF
 
     if error:
         flash('Wordpress authorization canceled or failed with error: '
               '{}, and description: {}' .format(error, error_desc))
         return redirect(url_for('views.index'))
+
+    if not validate_csrf(request.args.get('state')):
+        current_app.logger.warn('csrf token mismatch in wordpress callback.')
+        abort(400)
 
     r = requests.post(API_TOKEN_URL, data={
         'client_id': client_id,
@@ -66,6 +68,7 @@ def callback():
         'code': code,
         'grant_type': 'authorization_code',
     })
+
     if r.status_code // 100 != 2:
         error_obj = r.json()
         flash('Error ({}) requesting access token: {}, description: {}'.format(

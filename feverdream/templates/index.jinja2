@@ -19,15 +19,21 @@
 
     <div class="row">
       <form method="post" name="tumblr-start" action="{{ url_for('tumblr.authorize') }}" class="signup">
-        <input alt="Sign in with Tumblr" src="{{ url_for('static', filename='tumblr.png') }}" type="image" style="">
+        <input alt="Sign in with Tumblr"
+               src="{{ url_for('static', filename='tumblr.png') }}" type="image" style="" />
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
 
       <form method="post" name="wordpress-start" action="{{ url_for('wordpress.authorize') }}" class="signup">
-        <input alt="Sign in with WordPress.com" src="{{ url_for('static', filename='wordpress_com.png') }}" type="image">
+        <input alt="Sign in with WordPress.com"
+               src="{{ url_for('static', filename='wordpress_com.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
 
       <form method="post" name="blogger-start" action="{{ url_for('blogger.authorize') }}" class="signup">
-        <input alt="Sign in with Blogger" src="{{ url_for('static', filename='blogger.png') }}" type="image">
+        <input alt="Sign in with Blogger"
+               src="{{ url_for('static', filename='blogger.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
     </div>
 

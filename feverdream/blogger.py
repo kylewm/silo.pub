@@ -1,6 +1,8 @@
 from flask import (
     Blueprint, url_for, current_app, request, redirect, flash, make_response,
+    abort,
 )
+from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 import requests
 import urllib.parse
 from feverdream.models import Account, Blogger
@@ -26,12 +28,13 @@ blogger = Blueprint('blogger', __name__)
 @blogger.route('/blogger/authorize', methods=['POST'])
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
+    csrf_token = generate_csrf()
     return redirect(API_AUTH_URL + '?' + urllib.parse.urlencode({
         'response_type': 'code',
         'client_id': current_app.config['GOOGLE_CLIENT_ID'],
         'redirect_uri': redirect_uri,
         'scope': BLOGGER_SCOPE,
-        'state': 'TODO-CSRF',
+        'state': csrf_token,
     }))
 
 
@@ -40,7 +43,6 @@ def callback():
     redirect_uri = url_for('.callback', _external=True)
     code = request.args.get('code')
     error = request.args.get('error')
-    state = request.args.get('state')  # TODO handle CSRF
 
     if error:
         err_msg = ('Blogger authorization canceled or failed with error: {}'
@@ -48,6 +50,10 @@ def callback():
         current_app.logger.warn(err_msg)
         flash(err_msg, category='warning')
         return redirect(url_for('views.index'))
+
+    if not validate_csrf(request.args.get('state')):
+        current_app.logger.warn('csrf token mismatch in blogger callback.')
+        abort(400)
 
     r = requests.post(API_TOKEN_URL, data={
         'code': code,
