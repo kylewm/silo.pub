@@ -4,6 +4,7 @@ from flask import (
 import requests
 import urllib.parse
 from feverdream.models import Site, Account
+from feverdream.extensions import csrf
 from feverdream import util
 from sqlalchemy import func
 
@@ -20,6 +21,7 @@ def publisher(service):
     return decorator
 
 
+@csrf.exempt
 @micropub.route('/micropub', methods=['GET', 'POST'])
 def micropub_endpoint():
     current_app.logger.info(
