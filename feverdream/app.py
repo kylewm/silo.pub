@@ -24,8 +24,8 @@ def create_app(config_path='../feverdream.cfg'):
         app.logger.addHandler(stream_handler)
 
     # redirect all requests to https on Heroku
-    if 'DYNO' in os.environ:
-        SSLify(app)
+    #if 'DYNO' in os.environ:
+    #    SSLify(app)
     extensions.init_app(app)
     app.register_blueprint(views)
     app.register_blueprint(wordpress)
