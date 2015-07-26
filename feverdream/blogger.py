@@ -6,7 +6,7 @@ from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 import requests
 import urllib.parse
 from feverdream.models import Account, Blogger
-from feverdream.extensions import db
+from feverdream.ext import db
 from feverdream import util
 from feverdream import micropub
 import json
