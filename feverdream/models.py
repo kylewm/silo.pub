@@ -37,6 +37,8 @@ class Account(db.Model):
 
     token = db.Column(db.String(512))
     token_secret = db.Column(db.String(512))
+    refresh_token = db.Column(db.String(512))
+
     created = db.Column(db.DateTime)
     expiry = db.Column(db.DateTime)
 

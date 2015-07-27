@@ -34,7 +34,8 @@ def authorize():
 @tumblr.route('/tumblr/callback')
 def callback():
     try:
-        result = process_authenticate_callback()
+        callback_uri = url_for('.callback', _external=True)
+        result = process_authenticate_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
@@ -140,7 +141,8 @@ def publish(site):
         data = util.trim_nulls({
             'type': 'photo',
             'slug': request.form.get('slug'),
-            'caption': request.form.get('content') or request.form.get('name'),
+            'caption': request.form.get('content') or request.form.get('name') 
+            or request.form.get('summary'),
         })
         fake_req = requests.Request('POST', create_post_url, data=data)
         fake_req = fake_req.prepare()

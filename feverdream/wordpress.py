@@ -56,7 +56,8 @@ def callback():
             error_description=request.args.get('error_description'),
             state=state))
 
-    result = process_authenticate_callback()
+    redirect_uri = url_for('wordpress.callback', _external=True)
+    result = process_authenticate_callback(redirect_uri)
 
     if 'error' in result:
         flash(result['error'], category='danger')

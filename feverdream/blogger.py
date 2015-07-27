@@ -49,6 +49,8 @@ def callback():
     account.username = result['username']
     account.user_info = result['user_info']
     account.token = result['token']
+    account.refresh_token = result['refresh']
+    account.expiry = result['expiry']
 
     r = requests.get(API_BLOGS_URL, headers={
         'Authorization': 'Bearer ' + account.token,
@@ -86,6 +88,7 @@ def get_authenticate_url(redirect_uri):
         'redirect_uri': redirect_uri,
         'scope': BLOGGER_SCOPE,
         'state': csrf_token,
+        'access_type': 'offline', # necessary to get refresh token
     })
 
 
@@ -106,6 +109,7 @@ def process_authenticate_callback(redirect_uri):
         'client_secret': current_app.config['GOOGLE_CLIENT_SECRET'],
         'redirect_uri': redirect_uri,
         'grant_type': 'authorization_code',
+        'access_type': 'offline',
     })
 
     if util.check_request_failed(r):
@@ -114,8 +118,10 @@ def process_authenticate_callback(redirect_uri):
     payload = r.json()
     access_token = payload.get('access_token')
     expires_in = payload.get('expires_in')
+    refresh_token = payload.get('refresh_token')
+    expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in))
 
-    current_app.logger.info('Got Blogger access token: %s', access_token)
+    current_app.logger.info('Got Blogger access token: %s. expiry: %s', access_token, expires_in)
 
     r = requests.get(API_SELF_URL, headers={
         'Authorization': 'Bearer ' + access_token,
@@ -132,6 +138,8 @@ def process_authenticate_callback(redirect_uri):
         'username': username,
         'user_info': payload,
         'token': access_token,
+        'refresh': refresh_token,
+        'expiry': expiry,
     }
 
 

@@ -67,8 +67,8 @@ def get_complex_content(data):
             lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
                 headline, prop, target, prettify_url(target)))
 
-    content = data.get('content')
+    content = data.get('content') or data.get('summary')
     if content:
-        lines.append(data.get('content'))
+        lines.append(content)
 
     return '\n'.join(lines)

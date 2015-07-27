@@ -2,7 +2,7 @@ from feverdream import util
 from feverdream.ext import csrf, redis
 from feverdream.models import Site, Account
 from flask import Blueprint, redirect, url_for, current_app, request, abort
-from flask import jsonify, session
+from flask import jsonify, session, make_response
 import datetime
 import json
 import sys
@@ -31,6 +31,7 @@ def indieauth():
 
         datastr = redis.get('indieauth-code:{}'.format(code))
         if not datastr:
+            current_app.logger.warn('unrecognized auth code %s', code)
             return util.urlenc_response(
                 {'error': 'Unrecognized or expired authorization code'}, 400)
 
@@ -38,18 +39,26 @@ def indieauth():
         for key, value in [('client_id', client_id),
                            ('redirect_uri', redirect_uri), ('state', state)]:
             if data.get(key) != value:
+                current_app.logger.warn('%s mismatch. expected=%s, received=%s', key, data.get(key), value)
                 return util.urlenc_response({'error': key + ' mismatch'}, 400)
 
         me = data.get('me')
         return util.urlenc_response({'me': me})
 
-    # indieauth via the silo's authenciation mechanism
+    # indieauth via the silo's authenication mechanism
     try:
         me = request.args.get('me')
         redirect_uri = request.args.get('redirect_uri')
-        site = Site.lookup_by_url(me)
+        
+        current_app.logger.info('get indieauth with me=%s and redirect=%s', me, redirect_uri)
+        if not me or not redirect_uri:
+            resp = make_response("This is SiloPub's authorization endpoint. At least 'me' and 'redirect_uri' are required.")
+            resp.headers['IndieAuth'] = 'authorization_endpoint'
+            return resp
 
+        site = Site.lookup_by_url(me)
         if not site:
+            current_app.logger.warn('Auth failed, unknown site %s', me)
             return redirect(util.set_query_params(
                 redirect_uri, error='Authorization failed. Unknown site {}'
                 .format(me)))
@@ -59,12 +68,19 @@ def indieauth():
             'redirect_uri': redirect_uri,
             'client_id': request.args.get('client_id'),
             'state': request.args.get('state', ''),
+            'scope': request.args.get('scope', ''),
         }
         return redirect(SERVICES[site.service].get_authenticate_url(
             url_for('.indieauth_callback', _external=True)))
 
     except:
         current_app.logger.exception('Starting IndieAuth')
+        if not redirect_uri:
+            resp = make_response('Exception starting indieauth: {}'.format(
+                str(sys.exc_info()[0])), 400)
+            resp.headers['Content-Type'] = 'text/plain'
+            return resp
+            
         return redirect(util.set_query_params(
             redirect_uri, error=str(sys.exc_info()[0])))
 
@@ -87,14 +103,18 @@ def indieauth_callback():
     result = SERVICES[my_site.service].process_authenticate_callback(
         url_for('.indieauth_callback', _external=True))
     if 'error' in result:
+        current_app.logger.warn('error on callback %s', result['error'])
         return redirect(
             util.set_query_params(redirect_uri, error=result['error']))
 
+    current_app.logger.debug('auth callback result %s', result)
+        
     # check that the authorized user owns the requested site
     authed_account = Account.query.filter_by(
         service=my_site.service, user_id=result['user_id']).first()
 
     if not authed_account:
+        current_app.logger.warn('Auth failed, unknown account %s', result['user_id'])
         return redirect(util.set_query_params(
             redirect_uri,
             error='Authorization failed. Unknown account {}'
@@ -134,6 +154,7 @@ def token_endpoint():
 
     datastr = redis.get('indieauth-code:{}'.format(code))
     if not datastr:
+        current_app.logger.warn('unrecognized or expired code %s', code)
         return util.urlenc_response(
             {'error': 'Unrecognized or expired authorization code'}, 400)
 
@@ -141,6 +162,7 @@ def token_endpoint():
     for key, value in [('me', me), ('client_id', client_id),
                        ('redirect_uri', redirect_uri), ('state', state)]:
         if data.get(key) != value:
+            current_app.logger.warn('%s mismatch. expected=%s, received=%s', key, data.get(key), value)
             return util.urlenc_response({'error': key + ' mismatch'}, 400)
 
     # ok we're confirmed, create an access token
