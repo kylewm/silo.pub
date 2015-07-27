@@ -2,22 +2,125 @@ from feverdream import util
 from feverdream.ext import csrf, redis
 from feverdream.models import Site, Account
 from flask import Blueprint, redirect, url_for, current_app, request, abort
-from flask import jsonify
+from flask import jsonify, session
 import datetime
 import json
-import requests
-import urllib.parse
+import sys
+import uuid
 
-PUBLISHERS = {}
-
+SERVICES = {}
 micropub = Blueprint('micropub', __name__)
 
 
-def publisher(service):
-    def decorator(f):
-        PUBLISHERS[service] = f
-        return f
-    return decorator
+def register_service(name, service):
+    """Register the services by name so we can delegate to their specific
+    implementations
+    """
+    SERVICES[name] = service
+
+
+@csrf.exempt
+@micropub.route('/indieauth', methods=['GET', 'POST'])
+def indieauth():
+    # verify authorization
+    if request.method == 'POST':
+        code = request.form.get('code')
+        client_id = request.form.get('client_id')
+        redirect_uri = request.form.get('redirect_uri')
+        state = request.form.get('state', '')
+
+        datastr = redis.get('indieauth-code:{}'.format(code))
+        if not datastr:
+            return util.urlenc_response(
+                {'error': 'Unrecognized or expired authorization code'}, 400)
+
+        data = json.loads(datastr.decode('utf-8'))
+        for key, value in [('client_id', client_id),
+                           ('redirect_uri', redirect_uri), ('state', state)]:
+            if data.get(key) != value:
+                return util.urlenc_response({'error': key + ' mismatch'}, 400)
+
+        me = data.get('me')
+        return util.urlenc_response({'me': me})
+
+    # indieauth via the silo's authenciation mechanism
+    try:
+        me = request.args.get('me')
+        redirect_uri = request.args.get('redirect_uri')
+        site = Site.lookup_by_url(me)
+
+        if not site:
+            return redirect(util.set_query_params(
+                redirect_uri, error='Authorization failed. Unknown site {}'
+                .format(me)))
+
+        session['indieauth_params'] = {
+            'me': me,
+            'redirect_uri': redirect_uri,
+            'client_id': request.args.get('client_id'),
+            'state': request.args.get('state', ''),
+        }
+        return redirect(SERVICES[site.service].get_authenticate_url(
+            url_for('.indieauth_callback', _external=True)))
+
+    except:
+        current_app.logger.exception('Starting IndieAuth')
+        return redirect(util.set_query_params(
+            redirect_uri, error=str(sys.exc_info()[0])))
+
+
+@micropub.route('/indieauth/callback')
+def indieauth_callback():
+    ia_params = session.get('indieauth_params', {})
+    me = ia_params.get('me')
+    client_id = ia_params.get('client_id')
+    redirect_uri = ia_params.get('redirect_uri')
+    state = ia_params.get('state', '')
+    scope = ia_params.get('scope', '')
+
+    my_site = Site.lookup_by_url(me)
+    if not my_site:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorization failed. Unknown site {}'.format(me)))
+
+    result = SERVICES[my_site.service].process_authenticate_callback(
+        url_for('.indieauth_callback', _external=True))
+    if 'error' in result:
+        return redirect(
+            util.set_query_params(redirect_uri, error=result['error']))
+
+    # check that the authorized user owns the requested site
+    authed_account = Account.query.filter_by(
+        service=my_site.service, user_id=result['user_id']).first()
+
+    if not authed_account:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorization failed. Unknown account {}'
+            .format(result['user_id'])))
+
+    if my_site.account != authed_account:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorized account {} does not own requested site {}'
+            .format(authed_account.username, my_site.domain)))
+
+    # hand back a code to the micropub client
+    code = uuid.uuid4().hex
+    redis.setex('indieauth-code:{}'.format(code),
+                datetime.timedelta(minutes=5),
+                json.dumps({
+                    'site': my_site.id,
+                    'me': me,
+                    'redirect_uri': redirect_uri,
+                    'client_id': client_id,
+                    'state': state,
+                    'scope': scope,
+                }))
+
+    return redirect(util.set_query_params(
+        redirect_uri, me=me, state=state, code=code))
 
 
 @csrf.exempt
@@ -104,22 +207,4 @@ def micropub_endpoint():
         return err_msg, 401
 
     current_app.logger.info('Success! Publishing to %s', site)
-    return PUBLISHERS[site.service](site)
-
-
-def get_complex_content():
-    lines = []
-    for prop, headline in [('in-reply-to', 'In reply to'),
-                           ('like-of', 'Liked'),
-                           ('repost-of', 'Reposted'),
-                           ('bookmark-of', 'Bookmarked')]:
-        target = request.form.get(prop)
-        if target:
-            lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
-                headline, prop, target, util.prettify_url(target)))
-
-    content = request.form.get('content')
-    if content:
-        lines.append(request.form.get('content'))
-
-    return '\n'.join(lines)
+    return SERVICES[site.service].publish(site)

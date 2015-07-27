@@ -1,9 +1,9 @@
 from flask import Flask
 from feverdream.views import views
-from feverdream.wordpress import wordpress
-from feverdream.blogger import blogger
-from feverdream.tumblr import tumblr
-from feverdream.micropub import micropub
+from feverdream import wordpress
+from feverdream import blogger
+from feverdream import tumblr
+from feverdream import micropub
 from feverdream import ext
 from feverdream.models import *
 import logging
@@ -22,13 +22,15 @@ def create_app(config_path='../feverdream.cfg'):
         stream_handler.setFormatter(formatter)
         app.logger.addHandler(stream_handler)
 
-    # redirect all requests to https on Heroku
-    if 'DYNO' in os.environ:
-        SSLify(app)
     ext.init_app(app)
     app.register_blueprint(views)
-    app.register_blueprint(wordpress)
-    app.register_blueprint(blogger)
-    app.register_blueprint(tumblr)
-    app.register_blueprint(micropub)
+    app.register_blueprint(wordpress.wordpress)
+    app.register_blueprint(blogger.blogger)
+    app.register_blueprint(tumblr.tumblr)
+    app.register_blueprint(micropub.micropub)
+
+    micropub.register_service('wordpress', wordpress)
+    micropub.register_service('tumblr', tumblr)
+    micropub.register_service('blogger', blogger)
+
     return app

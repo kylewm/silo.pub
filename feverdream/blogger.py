@@ -1,15 +1,12 @@
-from flask import (
-    Blueprint, url_for, current_app, request, redirect, flash, make_response,
-    abort,
-)
+from feverdream import util
+from feverdream.ext import db
+from feverdream.models import Account, Blogger
+from flask import Blueprint, url_for, current_app, request, redirect, flash
+from flask import make_response
 from flask.ext.wtf.csrf import generate_csrf, validate_csrf
+import json
 import requests
 import urllib.parse
-from feverdream.models import Account, Blogger
-from feverdream.ext import db
-from feverdream import util
-from feverdream import micropub
-import json
 
 
 API_AUTH_URL = 'https://accounts.google.com/o/oauth2/auth'
@@ -28,61 +25,20 @@ blogger = Blueprint('blogger', __name__)
 @blogger.route('/blogger/authorize', methods=['POST'])
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
-    csrf_token = generate_csrf()
-    return redirect(API_AUTH_URL + '?' + urllib.parse.urlencode({
-        'response_type': 'code',
-        'client_id': current_app.config['GOOGLE_CLIENT_ID'],
-        'redirect_uri': redirect_uri,
-        'scope': BLOGGER_SCOPE,
-        'state': csrf_token,
-    }))
+    return redirect(get_authenticate_url(redirect_uri))
 
 
 @blogger.route('/blogger/callback')
 def callback():
     redirect_uri = url_for('.callback', _external=True)
-    code = request.args.get('code')
-    error = request.args.get('error')
+    result = process_authenticate_callback(redirect_uri)
 
-    if error:
-        err_msg = ('Blogger authorization canceled or failed with error: {}'
-                   .format(error))
-        current_app.logger.warn(err_msg)
-        flash(err_msg, category='warning')
+    if 'error' in result:
+        flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
-
-    if not validate_csrf(request.args.get('state')):
-        current_app.logger.warn('csrf token mismatch in blogger callback.')
-        abort(400)
-
-    r = requests.post(API_TOKEN_URL, data={
-        'code': code,
-        'client_id': current_app.config['GOOGLE_CLIENT_ID'],
-        'client_secret': current_app.config['GOOGLE_CLIENT_SECRET'],
-        'redirect_uri': redirect_uri,
-        'grant_type': 'authorization_code',
-    })
-
-    if util.check_request_failed(r):
-        return redirect(url_for('views.index'))
-
-    payload = r.json()
-    access_token = payload.get('access_token')
-    expires_in = payload.get('expires_in')
-
-    current_app.logger.info('Got Blogger access token: %s', access_token)
-
-    r = requests.get(API_SELF_URL, headers={
-        'Authorization': 'Bearer ' + access_token,
-    })
-
-    if util.check_request_failed(r):
-        return redirect(url_for('views.index'))
-
-    payload = r.json()
-    username = user_id = payload.get('id')
 
     # find or create the account
+    user_id = result['user_id']
     account = Account.query.filter_by(
         service=SERVICE_NAME, user_id=user_id).first()
 
@@ -90,12 +46,12 @@ def callback():
         account = Account(service=SERVICE_NAME, user_id=user_id)
         db.session.add(account)
 
-    account.username = username
-    account.user_info = payload
-    account.token = access_token
+    account.username = result['username']
+    account.user_info = result['user_info']
+    account.token = result['token']
 
     r = requests.get(API_BLOGS_URL, headers={
-        'Authorization': 'Bearer ' + access_token,
+        'Authorization': 'Bearer ' + account.token,
     })
 
     if util.check_request_failed(r):
@@ -122,7 +78,63 @@ def callback():
                             username=account.username))
 
 
-@micropub.publisher(SERVICE_NAME)
+def get_authenticate_url(redirect_uri):
+    csrf_token = generate_csrf()
+    return API_AUTH_URL + '?' + urllib.parse.urlencode({
+        'response_type': 'code',
+        'client_id': current_app.config['GOOGLE_CLIENT_ID'],
+        'redirect_uri': redirect_uri,
+        'scope': BLOGGER_SCOPE,
+        'state': csrf_token,
+    })
+
+
+def process_authenticate_callback(redirect_uri):
+    code = request.args.get('code')
+    error = request.args.get('error')
+
+    if error:
+        return {'error': 'Blogger authorization canceled or '
+                'failed with error: {}' .format(error)}
+
+    if not validate_csrf(request.args.get('state')):
+        return {'error': 'csrf token mismatch in blogger callback.'}
+
+    r = requests.post(API_TOKEN_URL, data={
+        'code': code,
+        'client_id': current_app.config['GOOGLE_CLIENT_ID'],
+        'client_secret': current_app.config['GOOGLE_CLIENT_SECRET'],
+        'redirect_uri': redirect_uri,
+        'grant_type': 'authorization_code',
+    })
+
+    if util.check_request_failed(r):
+        return {'error': 'failed to validate access token'}
+
+    payload = r.json()
+    access_token = payload.get('access_token')
+    expires_in = payload.get('expires_in')
+
+    current_app.logger.info('Got Blogger access token: %s', access_token)
+
+    r = requests.get(API_SELF_URL, headers={
+        'Authorization': 'Bearer ' + access_token,
+    })
+
+    if util.check_request_failed(r):
+        return {'error': 'failed to fetch {}'.format(API_SELF_URL)}
+
+    payload = r.json()
+    username = user_id = payload.get('id')
+
+    return {
+        'user_id': user_id,
+        'username': username,
+        'user_info': payload,
+        'token': access_token,
+    }
+
+
 def publish(site):
     """
     Request:
@@ -172,7 +184,7 @@ def publish(site):
 
     post_data = util.trim_nulls({
         'title': request.form.get('name'),
-        'content': micropub.get_complex_content(),
+        'content': util.get_complex_content(request.form),
     })
 
     r = requests.post(create_post_url, headers={

@@ -52,3 +52,23 @@ def jwt_encode(obj):
 
 def jwt_decode(s):
     return jwt.decode(s, current_app.config['SECRET_KEY'])
+
+
+def get_complex_content(data):
+    """Augment content with content from additional fields like
+    in-reply-to"""
+    lines = []
+    for prop, headline in [('in-reply-to', 'In reply to'),
+                           ('like-of', 'Liked'),
+                           ('repost-of', 'Reposted'),
+                           ('bookmark-of', 'Bookmarked')]:
+        target = data.get(prop)
+        if target:
+            lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
+                headline, prop, target, prettify_url(target)))
+
+    content = data.get('content')
+    if content:
+        lines.append(data.get('content'))
+
+    return '\n'.join(lines)
