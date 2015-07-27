@@ -1,14 +1,12 @@
-from flask import (
-    Blueprint, current_app, redirect, url_for, request, flash, make_response,
-)
-import requests
-from requests_oauthlib import OAuth1Session, OAuth1
-from feverdream.models import OAuthRequestToken, Account, Tumblr
-from feverdream.extensions import db
 from feverdream import util
-from feverdream import micropub
-import sys
+from feverdream.ext import db
+from feverdream.models import Account, Tumblr
+from flask import Blueprint, current_app, redirect, url_for, request, flash
+from flask import make_response, session
+from requests_oauthlib import OAuth1Session, OAuth1
 import html
+import requests
+import sys
 
 
 REQUEST_TOKEN_URL = 'https://www.tumblr.com/oauth/request_token'
@@ -24,20 +22,9 @@ tumblr = Blueprint('tumblr', __name__)
 
 @tumblr.route('/tumblr/authorize', methods=['POST'])
 def authorize():
-    callback_uri = url_for('.callback', _external=True)
     try:
-        oauth = OAuth1Session(
-            client_key=current_app.config['TUMBLR_CLIENT_KEY'],
-            client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
-            callback_uri=callback_uri)
-        r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
-        # save the request token and secret
-        request_token = OAuthRequestToken(
-            token=r.get('oauth_token'),
-            token_secret=r.get('oauth_token_secret'))
-        db.session.add(request_token)
-        db.session.commit()
-        return redirect(oauth.authorization_url(AUTHORIZE_URL))
+        callback_uri = url_for('.callback', _external=True)
+        return redirect(get_authenticate_url(callback_uri))
     except:
         current_app.logger.exception('Starting Tumblr authorization')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
@@ -46,48 +33,26 @@ def authorize():
 
 @tumblr.route('/tumblr/callback')
 def callback():
-    verifier = request.args.get('oauth_verifier')
-    request_token_key = request.args.get('oauth_token')
-    if not verifier or not request_token_key:
-        # user declined
-        flash('Tumblr authorization declined')
-        return redirect(url_for('views.index'))
-
-    request_token = OAuthRequestToken.query.get(request.args['oauth_token'])
-    if not request_token:
-        flash('Invalid OAuth request token', category='danger')
-        return redirect(url_for('views.index'))
-
     try:
-        oauth = OAuth1Session(
-            client_key=current_app.config['TUMBLR_CLIENT_KEY'],
-            client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
-            resource_owner_key=request_token.token,
-            resource_owner_secret=request_token.token_secret)
-        oauth.parse_authorization_response(request.url)
-        # get the access token and secret
-        r = oauth.fetch_access_token(ACCESS_TOKEN_URL)
-        token = r.get('oauth_token')
-        secret = r.get('oauth_token_secret')
-
-        info_resp = oauth.get(USER_INFO_URL).json()
-        user_info = info_resp.get('response', {}).get('user')
-        user_id = username = user_info.get('name')
+        result = process_authenticate_callback()
+        if 'error' in result:
+            flash(result['error'], category='danger')
+            return redirect(url_for('views.index'))
 
         account = Account.query.filter_by(
-            service='tumblr', user_id=user_id).first()
+            service='tumblr', user_id=result['user_id']).first()
 
         if not account:
-            account = Account(service='tumblr', user_id=user_id)
+            account = Account(service='tumblr', user_id=result['user_id'])
             db.session.add(account)
 
-        account.username = username
-        account.user_info = user_info
-        account.token = token
-        account.token_secret = secret
+        account.username = result['username']
+        account.user_info = result['user_info']
+        account.token = result['token']
+        account.token_secret = result['secret']
 
         account.sites = []
-        for blog in user_info.get('blogs', []):
+        for blog in result['user_info'].get('blogs', []):
             account.sites.append(Tumblr(
                 url=blog.get('url'),
                 domain=util.domain_for_url(blog.get('url')),
@@ -101,12 +66,54 @@ def callback():
                                 username=account.username))
 
     except:
-        current_app.logger.exception('Starting Tumblr authorization')
+        current_app.logger.exception('During Tumblr authorization callback')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
 
 
-@micropub.publisher(SERVICE_NAME)
+def get_authenticate_url(callback_uri):
+    # Tumblr only has authorize, no authenticate
+    oauth = OAuth1Session(
+        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
+        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
+        callback_uri=callback_uri)
+    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
+    session['oauth_token_secret'] = r.get('oauth_token_secret')
+    return oauth.authorization_url(AUTHORIZE_URL)
+
+
+def process_authenticate_callback(callback_uri):
+    verifier = request.args.get('oauth_verifier')
+    request_token = request.args.get('oauth_token')
+    if not verifier or not request_token:
+        # user declined
+        return {'error': 'Tumblr authorization declined'}
+
+    request_token_secret = session.get('oauth_token_secret')
+    oauth = OAuth1Session(
+        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
+        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
+        resource_owner_key=request_token,
+        resource_owner_secret=request_token_secret)
+    oauth.parse_authorization_response(request.url)
+    # get the access token and secret
+    r = oauth.fetch_access_token(ACCESS_TOKEN_URL)
+    token = r.get('oauth_token')
+    secret = r.get('oauth_token_secret')
+
+    info_resp = oauth.get(USER_INFO_URL).json()
+    user_info = info_resp.get('response', {}).get('user')
+    user_id = username = user_info.get('name')
+
+    return {
+        'token': token,
+        'secret': secret,
+        'user_id': user_id,
+        'username': username,
+        'user_info': user_info,
+    }
+
+
 def publish(site):
     auth = OAuth1(
         client_key=current_app.config['TUMBLR_CLIENT_KEY'],
@@ -158,7 +165,7 @@ def publish(site):
             'type': 'text',
             'slug': request.form.get('slug'),
             'title': request.form.get('name'),
-            'body': micropub.get_complex_content(),
+            'body': util.get_complex_content(request.form),
         })
         current_app.logger.info(
             'posting to tumblr %s, data=%r', create_post_url, data)

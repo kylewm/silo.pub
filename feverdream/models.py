@@ -1,4 +1,5 @@
-from feverdream.extensions import db
+from feverdream.ext import db
+from sqlalchemy import func
 import json
 import urllib.parse
 
@@ -19,12 +20,6 @@ class JsonType(db.TypeDecorator):
         if value is not None:
             value = json.loads(value)
         return value
-
-
-class OAuthRequestToken(db.Model):
-    token = db.Column(db.String(512), primary_key=True)
-    token_secret = db.Column(db.String(512))
-    state = db.Column(db.String(512))
 
 
 class Account(db.Model):
@@ -80,6 +75,12 @@ class Site(db.Model):
             'me': self.url,
             'client_id': 'https://feverdream.herokuapp.com',
         })
+
+    @classmethod
+    def lookup_by_url(cls, url):
+        domain = urllib.parse.urlparse(url).netloc
+        return cls.query.filter(
+            func.lower(Site.domain) == domain.lower()).first()
 
     def __repr__(self):
         return 'Site[domain={}]'.format(self.domain)

@@ -1,24 +1,165 @@
-from flask import (
-    Blueprint, redirect, url_for, current_app, request, abort, jsonify,
-)
-import requests
-import urllib.parse
-from feverdream.models import Site, Account
-from feverdream.extensions import csrf
 from feverdream import util
-from sqlalchemy import func
+from feverdream.ext import csrf, redis
+from feverdream.models import Site, Account
+from flask import Blueprint, redirect, url_for, current_app, request, abort
+from flask import jsonify, session
+import datetime
+import json
+import sys
+import uuid
 
-
-PUBLISHERS = {}
-
+SERVICES = {}
 micropub = Blueprint('micropub', __name__)
 
 
-def publisher(service):
-    def decorator(f):
-        PUBLISHERS[service] = f
-        return f
-    return decorator
+def register_service(name, service):
+    """Register the services by name so we can delegate to their specific
+    implementations
+    """
+    SERVICES[name] = service
+
+
+@csrf.exempt
+@micropub.route('/indieauth', methods=['GET', 'POST'])
+def indieauth():
+    # verify authorization
+    if request.method == 'POST':
+        code = request.form.get('code')
+        client_id = request.form.get('client_id')
+        redirect_uri = request.form.get('redirect_uri')
+        state = request.form.get('state', '')
+
+        datastr = redis.get('indieauth-code:{}'.format(code))
+        if not datastr:
+            return util.urlenc_response(
+                {'error': 'Unrecognized or expired authorization code'}, 400)
+
+        data = json.loads(datastr.decode('utf-8'))
+        for key, value in [('client_id', client_id),
+                           ('redirect_uri', redirect_uri), ('state', state)]:
+            if data.get(key) != value:
+                return util.urlenc_response({'error': key + ' mismatch'}, 400)
+
+        me = data.get('me')
+        return util.urlenc_response({'me': me})
+
+    # indieauth via the silo's authenciation mechanism
+    try:
+        me = request.args.get('me')
+        redirect_uri = request.args.get('redirect_uri')
+        site = Site.lookup_by_url(me)
+
+        if not site:
+            return redirect(util.set_query_params(
+                redirect_uri, error='Authorization failed. Unknown site {}'
+                .format(me)))
+
+        session['indieauth_params'] = {
+            'me': me,
+            'redirect_uri': redirect_uri,
+            'client_id': request.args.get('client_id'),
+            'state': request.args.get('state', ''),
+        }
+        return redirect(SERVICES[site.service].get_authenticate_url(
+            url_for('.indieauth_callback', _external=True)))
+
+    except:
+        current_app.logger.exception('Starting IndieAuth')
+        return redirect(util.set_query_params(
+            redirect_uri, error=str(sys.exc_info()[0])))
+
+
+@micropub.route('/indieauth/callback')
+def indieauth_callback():
+    ia_params = session.get('indieauth_params', {})
+    me = ia_params.get('me')
+    client_id = ia_params.get('client_id')
+    redirect_uri = ia_params.get('redirect_uri')
+    state = ia_params.get('state', '')
+    scope = ia_params.get('scope', '')
+
+    my_site = Site.lookup_by_url(me)
+    if not my_site:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorization failed. Unknown site {}'.format(me)))
+
+    result = SERVICES[my_site.service].process_authenticate_callback(
+        url_for('.indieauth_callback', _external=True))
+    if 'error' in result:
+        return redirect(
+            util.set_query_params(redirect_uri, error=result['error']))
+
+    # check that the authorized user owns the requested site
+    authed_account = Account.query.filter_by(
+        service=my_site.service, user_id=result['user_id']).first()
+
+    if not authed_account:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorization failed. Unknown account {}'
+            .format(result['user_id'])))
+
+    if my_site.account != authed_account:
+        return redirect(util.set_query_params(
+            redirect_uri,
+            error='Authorized account {} does not own requested site {}'
+            .format(authed_account.username, my_site.domain)))
+
+    # hand back a code to the micropub client
+    code = uuid.uuid4().hex
+    redis.setex('indieauth-code:{}'.format(code),
+                datetime.timedelta(minutes=5),
+                json.dumps({
+                    'site': my_site.id,
+                    'me': me,
+                    'redirect_uri': redirect_uri,
+                    'client_id': client_id,
+                    'state': state,
+                    'scope': scope,
+                }))
+
+    return redirect(util.set_query_params(
+        redirect_uri, me=me, state=state, code=code))
+
+
+@csrf.exempt
+@micropub.route('/token', methods=['POST'])
+def token_endpoint():
+    code = request.form.get('code')
+    me = request.form.get('me')
+    redirect_uri = request.form.get('redirect_uri')
+    client_id = request.form.get('client_id')
+    state = request.form.get('state', '')
+
+    datastr = redis.get('indieauth-code:{}'.format(code))
+    if not datastr:
+        return util.urlenc_response(
+            {'error': 'Unrecognized or expired authorization code'}, 400)
+
+    data = json.loads(datastr.decode('utf-8'))
+    for key, value in [('me', me), ('client_id', client_id),
+                       ('redirect_uri', redirect_uri), ('state', state)]:
+        if data.get(key) != value:
+            return util.urlenc_response({'error': key + ' mismatch'}, 400)
+
+    # ok we're confirmed, create an access token
+    scope = data.get('scope', '')
+    site_id = data.get('site')
+
+    token = util.jwt_encode({
+        'me': me,
+        'site': site_id,
+        'client_id': client_id,
+        'scope': scope,
+        'date_issued': datetime.datetime.utcnow().isoformat()
+    })
+
+    return util.urlenc_response({
+        'access_token': token,
+        'me': me,
+        'scope': scope,
+    })
 
 
 @csrf.exempt
@@ -43,53 +184,27 @@ def micropub_endpoint():
         current_app.logger.warn(err_msg)
         return err_msg, 401
 
-    r = requests.get('https://tokens.indieauth.com/token', headers={
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Bearer ' + token})
+    token_data = util.jwt_decode(token)
 
-    if r.status_code // 100 != 2:
-        err_msg = ('Access token rejected by indieauth.com with message {}'
-                   .format(r.text))
+    if not token_data:
+        err_msg = 'Unrecognized token: {}' .format(token)
         current_app.logger.warn(err_msg)
         return err_msg, 401
 
-    current_app.logger.info(
-        'indieauth.com confirms this is a good token %s', r.text)
-
-    token_data = urllib.parse.parse_qs(r.text)
-    me = token_data.get('me')[0]
-    scope = token_data.get('scope')[0]
-    client_id = token_data.get('client_id')[0]
+    me = token_data.get('me')
+    site_id = token_data.get('site')
+    scope = token_data.get('scope')
+    client_id = token_data.get('client_id')
 
     # indieauth has confirmed that me is who they say they are, so if we have
     # an access token for their api, then we should be good to go
 
-    domain = urllib.parse.urlparse(me).netloc
-    site = Site.query.filter(
-        func.lower(Site.domain) == domain.lower()).first()
+    site = Site.query.get(site_id)
 
     if not site:
-        err_msg = 'Could not find an authorization for {}.'.format(domain)
+        err_msg = 'Could not find a site for site id {}.'.format(site_id)
         current_app.logger.warn(err_msg)
         return err_msg, 401
 
     current_app.logger.info('Success! Publishing to %s', site)
-    return PUBLISHERS[site.service](site)
-
-
-def get_complex_content():
-    lines = []
-    for prop, headline in [('in-reply-to', 'In reply to'),
-                           ('like-of', 'Liked'),
-                           ('repost-of', 'Reposted'),
-                           ('bookmark-of', 'Bookmarked')]:
-        target = request.form.get(prop)
-        if target:
-            lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
-                headline, prop, target, util.prettify_url(target)))
-
-    content = request.form.get('content')
-    if content:
-        lines.append(request.form.get('content'))
-
-    return '\n'.join(lines)
+    return SERVICES[site.service].publish(site)

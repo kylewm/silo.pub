@@ -4,9 +4,8 @@ from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 import requests
 import urllib.parse
 from feverdream.models import Account, Wordpress
-from feverdream.extensions import db
+from feverdream.ext import db
 from feverdream import util
-from feverdream import micropub
 import os.path
 
 API_HOST = 'https://public-api.wordpress.com'
@@ -38,66 +37,37 @@ def authorize():
         'client_id': client_id,
         'redirect_uri': redirect_uri,
         'response_type': 'code',
-        'state': generate_csrf(),
+        'state': generate_csrf() + '|auth',
     }))
 
 
 @wordpress.route('/wordpress/callback')
 def callback():
-    redirect_uri = url_for('.callback', _external=True)
-    client_id = current_app.config['WORDPRESS_CLIENT_ID']
-    client_secret = current_app.config['WORDPRESS_CLIENT_SECRET']
+    state = request.args.get('state', '')
+    csrf, purpose = state.split('|', 1)
 
-    code = request.args.get('code')
-    error = request.args.get('error')
-    error_desc = request.args.get('error_description')
+    # wordpress only allows us one redirect url, so use the state parameter to
+    # hack it to redirect to another one
+    if purpose == 'id':
+        return redirect(url_for(
+            'micropub.indieauth_callback',
+            code=request.args.get('code'),
+            error=request.args.get('error'),
+            error_description=request.args.get('error_description'),
+            state=state))
 
-    if error:
-        flash('Wordpress authorization canceled or failed with error: '
-              '{}, and description: {}' .format(error, error_desc))
+    result = process_authenticate_callback()
+
+    if 'error' in result:
+        flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
 
-    if not validate_csrf(request.args.get('state')):
-        current_app.logger.warn('csrf token mismatch in wordpress callback.')
-        abort(400)
-
-    r = requests.post(API_TOKEN_URL, data={
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
-        'client_secret': client_secret,
-        'code': code,
-        'grant_type': 'authorization_code',
-    })
-
-    if r.status_code // 100 != 2:
-        error_obj = r.json()
-        flash('Error ({}) requesting access token: {}, description: {}'.format(
-            r.status_code, error_obj.get('error'),
-            error_obj.get('error_description')), 'danger')
-        return redirect(url_for('views.index'))
-
-    payload = r.json()
-
-    current_app.logger.info('WordPress token endpoint repsonse: %r', payload)
-    access_token = payload.get('access_token')
-    blog_url = payload.get('blog_url')
-    blog_id = str(payload.get('blog_id'))
-
-    current_app.logger.info('Fetching user info %s', API_ME_URL)
-    r = requests.get(API_ME_URL, headers={
-        'Authorization': 'Bearer ' + access_token})
-    current_app.logger.info('User info response %s', r)
-
-    if r.status_code // 100 != 2:
-        error_obj = r.json()
-        flash('Error ({}) fetching user info: {}, description: {}'.format(
-            r.status_code, error_obj.get('error'),
-            error_obj.get('error_description')), 'danger')
-        return redirect(url_for('views.index'))
-
-    user_info = r.json()
-    user_id = str(user_info.get('ID'))
-    username = user_info.get('username')
+    access_token = result['token']
+    username = result['username']
+    user_id = result['user_id']
+    user_info = result['user_info']
+    blog_id = result['blog_id']
+    blog_url = result['blog_url']
 
     account = Account.query.filter_by(
         service=SERVICE_NAME, user_id=user_id).first()
@@ -138,14 +108,89 @@ def callback():
                             domain=site.domain))
 
 
-@micropub.publisher(SERVICE_NAME)
+def get_authenticate_url(callback_uri):
+    # wordpress.com only lets us specify one redirect_uri, so we'll ignore
+    # the passed in url and redirect to it later
+    client_id = current_app.config['WORDPRESS_CLIENT_ID']
+    return API_AUTHENTICATE_URL + '?' + urllib.parse.urlencode({
+        'client_id': client_id,
+        'redirect_uri': url_for('wordpress.callback', _external=True),
+        'response_type': 'code',
+        'state': generate_csrf() + '|id',
+    })
+
+
+def process_authenticate_callback(callback_uri):
+    # ignore the callback uri because wp only lets us define one
+    client_id = current_app.config['WORDPRESS_CLIENT_ID']
+    client_secret = current_app.config['WORDPRESS_CLIENT_SECRET']
+    redirect_uri = url_for('wordpress.callback', _external=True),
+
+    code = request.args.get('code')
+    error = request.args.get('error')
+    error_desc = request.args.get('error_description')
+    csrf, purpose = request.args.get('state', '').split('|', 1)
+
+    if error:
+        return {'error': 'Wordpress authorization canceled or failed with '
+                'error: {}, and description: {}' .format(error, error_desc)}
+
+    if not validate_csrf(csrf):
+        return {'error': 'csrf token mismatch in wordpress callback.'}
+
+    r = requests.post(API_TOKEN_URL, data={
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'client_secret': client_secret,
+        'code': code,
+        'grant_type': 'authorization_code',
+    })
+
+    if r.status_code // 100 != 2:
+        error_obj = r.json()
+        return {
+            'error': 'Error ({}) requesting access token: {}, description: {}'
+            .format(r.status_code, error_obj.get('error'),
+                    error_obj.get('error_description'))}
+
+    payload = r.json()
+    current_app.logger.info('WordPress token endpoint repsonse: %r', payload)
+
+    access_token = payload.get('access_token')
+    blog_url = payload.get('blog_url')
+    blog_id = str(payload.get('blog_id'))
+
+    r = requests.get(API_ME_URL, headers={
+        'Authorization': 'Bearer ' + access_token})
+    current_app.logger.info('User info response %s', r)
+
+    if r.status_code // 100 != 2:
+        error_obj = r.json()
+        return {'error': 'Error fetching user info: {}, description: {}'
+                .format(error_obj.get('error'),
+                        error_obj.get('error_description'))}
+
+    user_info = r.json()
+    user_id = str(user_info.get('ID'))
+    username = user_info.get('username')
+
+    return {
+        'token': access_token,
+        'blog_id': blog_id,
+        'blog_url': blog_url,
+        'user_id': user_id,
+        'username': username,
+        'user_info': user_info,
+    }
+
+
 def publish(site):
     type = request.form.get('h')
     new_post_url = API_NEW_POST_URL.format(site.site_id)
 
     data = {
         'title': request.form.get('name'),
-        'content': micropub.get_complex_content(),
+        'content': util.get_complex_content(request.form),
         'excerpt': request.form.get('summary'),
         'slug': request.form.get('slug'),
     }
@@ -175,5 +220,5 @@ def publish(site):
         return err_msg, 401
 
     result = make_response('', 201)
-    result.headers = {'Location': r.json().get('URL')}
+    result.headers['Location'] = r.json().get('URL')
     return result
