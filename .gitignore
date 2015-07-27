@@ -1,2 +1,4 @@
 db.sqlite
 .env
+venv/
+feverdream.cfg
