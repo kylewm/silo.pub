@@ -9,6 +9,7 @@ import html
 import requests
 import sys
 import json
+import re
 
 
 REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
@@ -17,6 +18,10 @@ AUTHORIZE_URL = 'https://api.twitter.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
 VERIFY_CREDENTIALS_URL = 'https://api.twitter.com/1.1/account/verify_credentials.json'
 CREATE_STATUS_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+RETWEET_STATUS_URL = 'https://api.twitter.com/1.1/statuses/retweet/{}.json'
+FAVE_STATUS_URL = 'https://api.twitter.com/1.1/favorites/create.json'
+
+TWEET_RE = re.compile(r'https?://(?:www\.|mobile\.)?twitter\.com/(\w+)/status(?:es)?/(\w+)')
 
 SERVICE_NAME = 'twitter'
 
@@ -149,40 +154,63 @@ def process_authenticate_callback(callback_uri):
 
 
 def publish(site):
-    current_app.logger.debug('Publishing to site %s', site)
-
     auth = OAuth1(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         resource_owner_key=site.account.token,
         resource_owner_secret=site.account.token_secret)
 
-    # Check in-reply-to for tweets
-    # like-of
-    # repost-of
+    def interpret_response(result):
+        result.raise_for_status()
+
+        result_json = result.json()
+        current_app.logger.debug("response from twitter {}".format(
+            json.dumps(result_json, indent=True)))
+        twitter_url = 'https://twitter.com/{}/status/{}'.format(
+            result_json.get('user', {}).get('screen_name'),
+            result_json.get('id_str'))
+
+        resp = make_response('', 201)
+        resp.headers['Location'] = twitter_url
+        return resp
+
+    repost_of = request.form.get('repost-of')
+    if repost_of:
+        m = TWEET_RE.match(repost_of)
+        if m:
+            tweet_id = m.group(2)
+            result = requests.post(
+                RETWEET_STATUS_URL.format(tweet_id), auth=auth)
+            return interpret_response(result)
+
+    like_of = request.form.get('like-of')
+    if like_of:
+        m = TWEET_RE.match(like_of)
+        if m:
+            tweet_id = m.group(2)
+            result = requests.post(FAVE_STATUS_URL, data={
+                'id': tweet_id,
+            }, auth=auth)
+            return interpret_response(result)
+
+    data = {}
+    in_reply_to = request.form.get('in-reply-to')
+    if in_reply_to:
+        m = TWEET_RE.match(in_reply_to)
+        if m:
+            data['in_reply_to_status_id'] = m.group(2)
+
+    location = request.form.get('location')
+    current_app.logger.debug('received location param: %s', location)
+    if location and location.startswith('geo:'):
+        latlong = location[4:].split(';')[0].split(',', 1)
+        if len(latlong) == 2:
+            data['lat'], data['long'] = latlong
 
     content = request.form.get('content')
     permalink_url = request.form.get('url')
-    in_reply_to = request.form.get('in-reply-to')
-    like_of = request.form.get('like-of')
-    repost_of = request.form.get('repost-of')
+    data['status'] = brevity.shorten(content, permalink=permalink_url)
 
-    shortened = brevity.shorten(content, permalink=permalink_url)
-
-    current_app.logger.debug('Update status with content %s, rendered %s',
-                             content, shortened)
-
-    result = requests.post(CREATE_STATUS_URL, data={
-        'status': shortened,
-    }, auth=auth)
-
-    result_json = result.json()
-    current_app.logger.debug("response from twitter {}".format(
-        json.dumps(result_json, indent=True)))
-    twitter_url = 'https://twitter.com/{}/status/{}'.format(
-        result_json.get('user', {}).get('screen_name'),
-        result_json.get('id_str'))
-
-    resp = make_response('', 201)
-    resp.headers['Location'] = twitter_url
-    return resp
+    current_app.logger.debug('publishing with params %s', data)
+    result = requests.post(CREATE_STATUS_URL, data=data, auth=auth)
+    return interpret_response(result)
