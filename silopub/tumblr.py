@@ -141,7 +141,7 @@ def publish(site):
         data = util.trim_nulls({
             'type': 'photo',
             'slug': request.form.get('slug'),
-            'caption': request.form.get('content') or request.form.get('name') 
+            'caption': request.form.get('content') or request.form.get('name')
             or request.form.get('summary'),
         })
         fake_req = requests.Request('POST', create_post_url, data=data)

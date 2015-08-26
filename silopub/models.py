@@ -132,3 +132,18 @@ class Wordpress(Site):
 
     def __repr__(self):
         return 'Wordpress[domain={}]'.format(self.domain)
+
+
+class Twitter(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'twitter'
+    }
+
+    def edit_template_url(self):
+        return None
+
+    def edit_profile_url(self):
+        return None
+
+    def __repr__(self):
+        return 'Twitter[username={}]'.format(self.site_id)
