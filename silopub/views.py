@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, abort, redirect, url_for, flash
-from feverdream.models import Account, Site
+from silopub.models import Account, Site
 import requests
 from bs4 import BeautifulSoup
 

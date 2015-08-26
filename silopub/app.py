@@ -1,16 +1,16 @@
 from flask import Flask
-from feverdream.views import views
-from feverdream import wordpress
-from feverdream import blogger
-from feverdream import tumblr
-from feverdream import micropub
-from feverdream import ext
-from feverdream.models import *
+from silopub.views import views
+from silopub import wordpress
+from silopub import blogger
+from silopub import tumblr
+from silopub import micropub
+from silopub import ext
+from silopub.models import *
 import logging
 import os
 
 
-def create_app(config_path='../feverdream.cfg'):
+def create_app(config_path='../silopub.cfg'):
     app = Flask(__name__)
     app.config.from_pyfile(config_path)
 

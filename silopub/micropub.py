@@ -1,6 +1,6 @@
-from feverdream import util
-from feverdream.ext import csrf, redis
-from feverdream.models import Site, Account
+from silopub import util
+from silopub.ext import csrf, redis
+from silopub.models import Site, Account
 from flask import Blueprint, redirect, url_for, current_app, request, abort
 from flask import jsonify, session, make_response
 import datetime

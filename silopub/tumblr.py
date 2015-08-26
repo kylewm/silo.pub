@@ -1,6 +1,6 @@
-from feverdream import util
-from feverdream.ext import db
-from feverdream.models import Account, Tumblr
+from silopub import util
+from silopub.ext import db
+from silopub.models import Account, Tumblr
 from flask import Blueprint, current_app, redirect, url_for, request, flash
 from flask import make_response, session
 from requests_oauthlib import OAuth1Session, OAuth1

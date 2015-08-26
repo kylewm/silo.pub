@@ -1,4 +1,4 @@
-from feverdream.ext import db
+from silopub.ext import db
 from sqlalchemy import func
 import json
 import urllib.parse
@@ -75,7 +75,7 @@ class Site(db.Model):
     def indieauth_url(self):
         return 'https://indieauth.com/auth?' + urllib.parse.urlencode({
             'me': self.url,
-            'client_id': 'https://feverdream.herokuapp.com',
+            'client_id': 'https://silopub.herokuapp.com',
         })
 
     @classmethod
