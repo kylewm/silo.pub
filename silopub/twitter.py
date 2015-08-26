@@ -19,6 +19,7 @@ AUTHORIZE_URL = 'https://api.twitter.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
 VERIFY_CREDENTIALS_URL = 'https://api.twitter.com/1.1/account/verify_credentials.json'
 CREATE_STATUS_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+CREATE_WITH_MEDIA_URL = 'https://api.twitter.com/1.1/statuses/update_with_media.json'
 RETWEET_STATUS_URL = 'https://api.twitter.com/1.1/statuses/retweet/{}.json'
 FAVE_STATUS_URL = 'https://api.twitter.com/1.1/favorites/create.json'
 
@@ -185,19 +186,18 @@ def publish(site):
         m = TWEET_RE.match(repost_of)
         if m:
             tweet_id = m.group(2)
-            result = requests.post(
-                RETWEET_STATUS_URL.format(tweet_id), auth=auth)
-            return interpret_response(result)
+            return interpret_response(
+                requests.post(RETWEET_STATUS_URL.format(tweet_id), auth=auth))
 
     like_of = request.form.get('like-of')
     if like_of:
         m = TWEET_RE.match(like_of)
         if m:
             tweet_id = m.group(2)
-            result = requests.post(FAVE_STATUS_URL, data={
-                'id': tweet_id,
-            }, auth=auth)
-            return interpret_response(result)
+            return interpret_response(
+                requests.post(FAVE_STATUS_URL, data={
+                    'id': tweet_id,
+                }, auth=auth))
 
     data = {}
     in_reply_to = request.form.get('in-reply-to')
@@ -213,10 +213,21 @@ def publish(site):
         if len(latlong) == 2:
             data['lat'], data['long'] = latlong
 
+    target_length = 140
     content = request.form.get('content')
     permalink_url = request.form.get('url')
-    data['status'] = brevity.shorten(content, permalink=permalink_url)
+    photo_file = request.files.get('photo')
+    if photo_file:
+        target_length -= 23
+
+    data['status'] = brevity.shorten(content, permalink=permalink_url,
+                                     target_length=target_length)
 
     current_app.logger.debug('publishing with params %s', data)
-    result = requests.post(CREATE_STATUS_URL, data=data, auth=auth)
-    return interpret_response(result)
+    if photo_file:
+        return interpret_response(
+            requests.post(CREATE_WITH_MEDIA_URL, data=data,
+                          files={'media[]': photo_file}, auth=auth))
+
+    return interpret_response(
+        requests.post(CREATE_STATUS_URL, data=data, auth=auth))
