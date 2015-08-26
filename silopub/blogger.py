@@ -1,6 +1,6 @@
-from feverdream import util
-from feverdream.ext import db
-from feverdream.models import Account, Blogger
+from silopub import util
+from silopub.ext import db
+from silopub.models import Account, Blogger
 from flask import Blueprint, url_for, current_app, request, redirect, flash
 from flask import make_response
 from flask.ext.wtf.csrf import generate_csrf, validate_csrf

@@ -1,4 +1,4 @@
-from feverdream.ext import db
+from silopub.ext import db
 from sqlalchemy import func
 import json
 import urllib.parse
@@ -80,12 +80,16 @@ class Site(db.Model):
     def indieauth_url(self):
         return 'https://indieauth.com/auth?' + urllib.parse.urlencode({
             'me': self.url,
-            'client_id': 'https://feverdream.herokuapp.com',
+            'client_id': 'https://silopub.herokuapp.com',
         })
 
     @classmethod
     def lookup_by_url(cls, url):
-        domain = urllib.parse.urlparse(url).netloc
+        parsed = urllib.parse.urlparse(url)
+        domain = parsed.netloc
+        if parsed.path != '/':
+            domain = domain + parsed.path
+
         return cls.query.filter(
             func.lower(Site.domain) == domain.lower()).first()
 
@@ -137,3 +141,18 @@ class Wordpress(Site):
 
     def __repr__(self):
         return 'Wordpress[domain={}]'.format(self.domain)
+
+
+class Twitter(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'twitter'
+    }
+
+    def edit_template_url(self):
+        return None
+
+    def edit_profile_url(self):
+        return None
+
+    def __repr__(self):
+        return 'Twitter[username={}]'.format(self.site_id)

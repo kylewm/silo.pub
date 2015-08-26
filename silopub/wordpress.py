@@ -3,9 +3,9 @@ from flask import (Blueprint, url_for, make_response, current_app, request,
 from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 import requests
 import urllib.parse
-from feverdream.models import Account, Wordpress
-from feverdream.ext import db
-from feverdream import util
+from silopub.models import Account, Wordpress
+from silopub.ext import db
+from silopub import util
 import os.path
 
 API_HOST = 'https://public-api.wordpress.com'

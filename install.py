@@ -1,9 +1,9 @@
 import os
-from feverdream import create_app
-from feverdream.extensions import db
+from silopub import create_app
+from silopub.ext import db
 
 app = create_app(os.path.join(
-    os.path.dirname(os.path.realpath(__name__)), 'feverdream.cfg'))
+    os.path.dirname(os.path.realpath(__name__)), 'silopub.cfg'))
 
 with app.app_context():
     #db.drop_all()

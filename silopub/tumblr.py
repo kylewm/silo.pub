@@ -1,6 +1,6 @@
-from feverdream import util
-from feverdream.ext import db
-from feverdream.models import Account, Tumblr
+from silopub import util
+from silopub.ext import db
+from silopub.models import Account, Tumblr
 from flask import Blueprint, current_app, redirect, url_for, request, flash
 from flask import make_response, session
 from requests_oauthlib import OAuth1Session, OAuth1
@@ -141,7 +141,7 @@ def publish(site):
         data = util.trim_nulls({
             'type': 'photo',
             'slug': request.form.get('slug'),
-            'caption': request.form.get('content') or request.form.get('name') 
+            'caption': request.form.get('content') or request.form.get('name')
             or request.form.get('summary'),
         })
         fake_req = requests.Request('POST', create_post_url, data=data)

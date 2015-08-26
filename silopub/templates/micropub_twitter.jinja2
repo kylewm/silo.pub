@@ -1,0 +1,21 @@
+{% extends "micropub.jinja2" %}
+
+{% block instructions %}
+
+  <p>
+    Normally, when you give a Micropub client your personal URL, it
+    fetches the page looking for &lt;link&gt; elements that tell it
+    where micropub requests should go. Because Twitter doesn't let you
+    add arbitrary &lt;link&gt; elements to your profile page, you
+    cannot use your Twitter profile URL to sign into Micropub. Instead
+    please use this "proxy" URL:
+  </p>
+  <p>
+    <input style="width: 100%" type="text" value="{{ url_for('twitter.proxy_homepage', username=site.account.username, _external=True) }}"/>
+  </p>
+  <p>
+    This page points to your Twitter identity and also tells the
+    micropub client where to send all the bits.
+  </p>
+
+{% endblock %}

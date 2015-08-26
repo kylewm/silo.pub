@@ -1,18 +1,21 @@
 from flask import Flask
-from feverdream.views import views
-from feverdream import wordpress
-from feverdream import blogger
-from feverdream import tumblr
-from feverdream import micropub
-from feverdream import ext
-from feverdream.models import *
+from silopub.views import views
+from silopub import wordpress
+from silopub import blogger
+from silopub import tumblr
+from silopub import twitter
+from silopub import micropub
+from silopub import ext
+from silopub.models import *
 import logging
 import os
 
 
-def create_app(config_path='../feverdream.cfg'):
+def create_app(config_path='../silopub.cfg'):
     app = Flask(__name__)
     app.config.from_pyfile(config_path)
+
+    print(app.config['SECRET_KEY'])
 
     if not app.debug:
         app.logger.setLevel(logging.DEBUG)
@@ -28,10 +31,12 @@ def create_app(config_path='../feverdream.cfg'):
     app.register_blueprint(wordpress.wordpress)
     app.register_blueprint(blogger.blogger)
     app.register_blueprint(tumblr.tumblr)
+    app.register_blueprint(twitter.twitter)
     app.register_blueprint(micropub.micropub)
 
     micropub.register_service('wordpress', wordpress)
     micropub.register_service('tumblr', tumblr)
     micropub.register_service('blogger', blogger)
+    micropub.register_service('twitter', twitter)
 
     return app

@@ -1,6 +1,6 @@
-from feverdream import util
-from feverdream.ext import csrf, redis
-from feverdream.models import Site, Account
+from silopub import util
+from silopub.ext import csrf, redis
+from silopub.models import Site, Account
 from flask import Blueprint, redirect, url_for, current_app, request, abort
 from flask import jsonify, session, make_response
 import datetime
@@ -49,14 +49,14 @@ def indieauth():
     try:
         me = request.args.get('me')
         redirect_uri = request.args.get('redirect_uri')
-        
+
         current_app.logger.info('get indieauth with me=%s and redirect=%s', me, redirect_uri)
         if not me or not redirect_uri:
             resp = make_response("This is SiloPub's authorization endpoint. At least 'me' and 'redirect_uri' are required.")
             resp.headers['IndieAuth'] = 'authorization_endpoint'
             return resp
 
-        site = Site.lookup_by_url(me)
+        site = Site.lookup_by_url(deproxyify(me))
         if not site:
             current_app.logger.warn('Auth failed, unknown site %s', me)
             return redirect(util.set_query_params(
@@ -80,7 +80,7 @@ def indieauth():
                 str(sys.exc_info()[0])), 400)
             resp.headers['Content-Type'] = 'text/plain'
             return resp
-            
+
         return redirect(util.set_query_params(
             redirect_uri, error=str(sys.exc_info()[0])))
 
@@ -94,7 +94,7 @@ def indieauth_callback():
     state = ia_params.get('state', '')
     scope = ia_params.get('scope', '')
 
-    my_site = Site.lookup_by_url(me)
+    my_site = Site.lookup_by_url(deproxyify(me))
     if not my_site:
         return redirect(util.set_query_params(
             redirect_uri,
@@ -108,7 +108,7 @@ def indieauth_callback():
             util.set_query_params(redirect_uri, error=result['error']))
 
     current_app.logger.debug('auth callback result %s', result)
-        
+
     # check that the authorized user owns the requested site
     authed_account = Account.query.filter_by(
         service=my_site.service, user_id=result['user_id']).first()
@@ -230,3 +230,9 @@ def micropub_endpoint():
 
     current_app.logger.info('Success! Publishing to %s', site)
     return SERVICES[site.service].publish(site)
+
+
+def deproxyify(me):
+    if me and me.startswith(request.url_root):
+        return 'http://' + me[len(request.url_root):]
+    return me
