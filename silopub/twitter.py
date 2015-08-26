@@ -2,6 +2,7 @@ from flask import Blueprint, current_app, redirect, url_for, request, flash
 from flask import make_response, session, abort
 from requests_oauthlib import OAuth1Session, OAuth1
 from silopub import util
+from silopub import micropub
 from silopub.ext import db
 from silopub.models import Account, Twitter
 import brevity
@@ -42,14 +43,19 @@ def proxy_homepage(username):
 <html>
     <head>
         <meta charset="utf-8">
-        <link rel="authorization_endpoint" href="http://feverdream.cc/indieauth">
-        <link rel="token_endpoint" href="http://feverdream.cc/token">
-        <link rel="micropub" href="http://feverdream.cc/micropub">
+        <link rel="authorization_endpoint" href="{}">
+        <link rel="token_endpoint" href="{}">
+        <link rel="micropub" href="{}">
     </head>
     <body>
         Micropub proxy for <a href="{}">@{}</a>
     </body>
-</html>""".format(account.sites[0].url, account.username)
+</html>""".format(
+    url_for('micropub.indieauth', _external=True),
+    url_for('micropub.token_endpoint', _external=True),
+    url_for('micropub.micropub_endpoint', _external=True),
+    account.sites[0].url,
+    account.username)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])
