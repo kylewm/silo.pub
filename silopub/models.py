@@ -80,7 +80,11 @@ class Site(db.Model):
 
     @classmethod
     def lookup_by_url(cls, url):
-        domain = urllib.parse.urlparse(url).netloc
+        parsed = urllib.parse.urlparse(url)
+        domain = parsed.netloc
+        if parsed.path != '/':
+            domain = domain + parsed.path
+
         return cls.query.filter(
             func.lower(Site.domain) == domain.lower()).first()
 

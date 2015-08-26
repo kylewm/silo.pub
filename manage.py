@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from feverdream import create_app
+from silopub import create_app
 from flask.ext.script import Manager
 from flask.ext.migrate import MigrateCommand
 

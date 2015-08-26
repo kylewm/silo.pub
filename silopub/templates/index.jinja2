@@ -35,16 +35,19 @@
                src="{{ url_for('static', filename='blogger.png') }}" type="image">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
+
+      </form>
+
+      <form method="post" name="twitter-start" action="{{ url_for('twitter.authorize') }}" class="signup">
+        <input alt="Sign in with Twitter"
+               src="{{ url_for('static', filename='twitter.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      </form>
+
     </div>
 
     <p style="margin-top: 40px;">
-      This is an <a href="https://indiewebcamp.com">indieweb</a>
-      project <a href="http://indiewebcamp.com/irc/2015-04-07#t1428449282044">suggested</a>
-      by <a href="http://www.kevinmarks.com">Kevin
-      Marks</a>, <a href="https://snarfed.org/micropub-for-hosted-blogs">written
-      up</a> by <a href="https://snarfed.org">Ryan Barrett</a>, and
-      <a href="https://github.com/kylewm/silo.pub">implemented</a>
-      by <a href="https://kylewm.com">Kyle Mahan</a>.
+      This is an <a href="https://indiewebcamp.com">indieweb</a> project <a href="http://indiewebcamp.com/irc/2015-04-07#t1428449282044">suggested</a> by <a href="http://www.kevinmarks.com">Kevin Marks</a>, <a href="https://snarfed.org/micropub-for-hosted-blogs">written up</a> by <a href="https://snarfed.org">Ryan Barrett</a>, and <a href="https://github.com/kylewm/silo.pub">implemented</a> by <a href="https://kylewm.com">Kyle Mahan</a>.
     </p>
 
   </div><!-- .container -->

@@ -3,8 +3,10 @@
 
 <div class="container">
 
+  {% block instructions %}
+
   <p>
-    Almost there, we just need to add some links to your homepage HTML
+    We just need to add some links to your homepage HTML
     to tell Micropub clients how to post to your site. When you log in
     to a client, it will first fetch your homepage and use these links
     to determine how to authorize you and publish to your site.
@@ -14,7 +16,6 @@
     blogging service's authentication mechanism to do the actual auth.
   </p>
 
-  {% block instructions %}
   {% endblock instructions %}
 
   {% if authorization_endpoint or token_endpoint or micropub %}

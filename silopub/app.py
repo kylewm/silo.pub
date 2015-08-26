@@ -15,6 +15,8 @@ def create_app(config_path='../silopub.cfg'):
     app = Flask(__name__)
     app.config.from_pyfile(config_path)
 
+    print(app.config['SECRET_KEY'])
+
     if not app.debug:
         app.logger.setLevel(logging.DEBUG)
         stream_handler = logging.StreamHandler()

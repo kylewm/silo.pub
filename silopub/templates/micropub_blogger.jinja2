@@ -1,6 +1,8 @@
 {% extends "micropub.jinja2" %}
 
 {% block instructions %}
+  {{ super() }}
+
   <p>
     <a target="_blank" href="{{ site.edit_template_url()}}">Click here to edit your site's template</a>. Click <em>Edit HTML</em> and add the following lines inside the <code>&lt;head&gt;</code> tag:
   </p>

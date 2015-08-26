@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, abort, redirect, url_for, flash
+from flask import Blueprint, render_template, abort, redirect, url_for, flash, request
 from silopub.models import Account, Site
 import requests
 from bs4 import BeautifulSoup
@@ -12,10 +12,13 @@ def index():
     return render_template('index.jinja2')
 
 
-@views.route('/<service>/user/<username>/')
-def account(service, username):
+@views.route('/setup/user/')
+def account():
+    service = request.args.get('service')
+    username = request.args.get('username')
     account = Account.query.filter_by(
         service=service, username=username).first()
+
     if not account:
         abort(404)
 
@@ -23,14 +26,18 @@ def account(service, username):
         'account.jinja2', account=account)
 
 
-@views.route('/<service>/site/<domain>/')
-def site(service, domain):
+@views.route('/setup/site/')
+def site():
+    service = request.args.get('service')
+    domain = request.args.get('domain')
     return redirect(url_for(
         '.start', service=service, domain=domain))
 
 
-@views.route('/<service>/site/<domain>/start/')
-def start(service, domain):
+@views.route('/setup/site/start/')
+def start():
+    service = request.args.get('service')
+    domain = request.args.get('domain')
     site = Site.query.filter_by(
         service=service, domain=domain).first()
     if not site:
@@ -40,8 +47,10 @@ def start(service, domain):
         'start.jinja2', site=site)
 
 
-@views.route('/<service>/site/<domain>/indieauth/')
-def indieauth(service, domain):
+@views.route('/setup/site/indieauth/')
+def indieauth():
+    service = request.args.get('service')
+    domain = request.args.get('domain')
     site = Site.query.filter_by(
         service=service, domain=domain).first()
     if not site:
@@ -62,8 +71,10 @@ def indieauth(service, domain):
         site=site, mes=mes)
 
 
-@views.route('/<service>/site/<domain>/micropub/')
-def micropub(service, domain):
+@views.route('/setup/site/micropub/')
+def micropub():
+    service = request.args.get('service')
+    domain = request.args.get('domain')
     site = Site.query.filter_by(
         service=service, domain=domain).first()
     if not site:

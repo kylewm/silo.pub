@@ -1,12 +1,14 @@
+from flask import Blueprint, current_app, redirect, url_for, request, flash
+from flask import make_response, session, abort
+from requests_oauthlib import OAuth1Session, OAuth1
 from silopub import util
 from silopub.ext import db
 from silopub.models import Account, Twitter
-from flask import Blueprint, current_app, redirect, url_for, request, flash
-from flask import make_response, session
-from requests_oauthlib import OAuth1Session, OAuth1
+import brevity
 import html
 import requests
 import sys
+import json
 
 
 REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
@@ -14,10 +16,35 @@ AUTHENTICATE_URL = 'https://api.twitter.com/oauth/authenticate'
 AUTHORIZE_URL = 'https://api.twitter.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
 VERIFY_CREDENTIALS_URL = 'https://api.twitter.com/1.1/account/verify_credentials.json'
+CREATE_STATUS_URL = 'https://api.twitter.com/1.1/statuses/update.json'
 
 SERVICE_NAME = 'twitter'
 
 twitter = Blueprint('twitter', __name__)
+
+
+@twitter.route('/twitter.com/<username>')
+def proxy_homepage(username):
+    account = Account.query.filter_by(
+        service='twitter', username=username).first()
+
+    if not account:
+        abort(404)
+
+    # TODO make endpoints visible because why not
+    return """
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="authorization_endpoint" href="http://feverdream.cc/indieauth">
+        <link rel="token_endpoint" href="http://feverdream.cc/token">
+        <link rel="micropub" href="http://feverdream.cc/micropub">
+    </head>
+    <body>
+        Micropub proxy for <a href="{}">@{}</a>
+    </body>
+</html>""".format(account.sites[0].url, account.username)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])
@@ -54,7 +81,7 @@ def callback():
 
         account.sites = [Twitter(
             url='https://twitter.com/{}'.format(account.username),
-            domain='twitter.com',
+            domain='twitter.com/{}'.format(account.username),
             site_id=account.user_id)]
 
         db.session.commit()
@@ -122,8 +149,40 @@ def process_authenticate_callback(callback_uri):
 
 
 def publish(site):
+    current_app.logger.debug('Publishing to site %s', site)
+
     auth = OAuth1(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         resource_owner_key=site.account.token,
         resource_owner_secret=site.account.token_secret)
+
+    # Check in-reply-to for tweets
+    # like-of
+    # repost-of
+
+    content = request.form.get('content')
+    permalink_url = request.form.get('url')
+    in_reply_to = request.form.get('in-reply-to')
+    like_of = request.form.get('like-of')
+    repost_of = request.form.get('repost-of')
+
+    shortened = brevity.shorten(content, permalink=permalink_url)
+
+    current_app.logger.debug('Update status with content %s, rendered %s',
+                             content, shortened)
+
+    result = requests.post(CREATE_STATUS_URL, data={
+        'status': shortened,
+    }, auth=auth)
+
+    result_json = result.json()
+    current_app.logger.debug("response from twitter {}".format(
+        json.dumps(result_json, indent=True)))
+    twitter_url = 'https://twitter.com/{}/status/{}'.format(
+        result_json.get('user', {}).get('screen_name'),
+        result_json.get('id_str'))
+
+    resp = make_response('', 201)
+    resp.headers['Location'] = twitter_url
+    return resp
