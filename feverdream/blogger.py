@@ -40,8 +40,7 @@ def callback():
 
     # find or create the account
     user_id = result['user_id']
-    account = Account.query.filter_by(
-        service=SERVICE_NAME, user_id=user_id).first()
+    account = Account.lookup_by_user_id(SERVICE_NAME, user_id)
 
     if not account:
         account = Account(service=SERVICE_NAME, user_id=user_id)
@@ -102,7 +101,6 @@ def get_authenticate_url(redirect_uri):
         'redirect_uri': redirect_uri,
         'scope': BLOGGER_SCOPE,
         'state': csrf_token,
-        'approval_prompt': 'auto',
     })
 
 
@@ -123,7 +121,6 @@ def process_authenticate_callback(redirect_uri):
         'client_secret': current_app.config['GOOGLE_CLIENT_SECRET'],
         'redirect_uri': redirect_uri,
         'grant_type': 'authorization_code',
-        'access_type': 'offline',
     })
 
     if util.check_request_failed(r):
@@ -135,7 +132,12 @@ def process_authenticate_callback(redirect_uri):
     access_token = payload.get('access_token')
     expires_in = payload.get('expires_in')
     refresh_token = payload.get('refresh_token')
-    expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in))
+
+    if expires_in:
+        expiry = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=int(expires_in))
+    else:
+        expiry = None
 
     current_app.logger.info('Got Blogger access token: %s. expiry: %s. refresh token: %s', access_token, expiry, refresh_token)
 
@@ -148,6 +150,15 @@ def process_authenticate_callback(redirect_uri):
 
     payload = r.json()
     username = user_id = payload.get('id')
+
+    account = Account.lookup_by_user_id(SERVICE_NAME, user_id)
+    if account:
+        # update the saved tokens
+        account.token = access_token
+        account.expiry = expiry
+        if refresh_token:
+            account.refresh_token = refresh_token
+        db.session.commit()
 
     return {
         'user_id': user_id,

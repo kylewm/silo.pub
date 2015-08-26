@@ -46,6 +46,11 @@ class Account(db.Model):
         return 'Account[service={}, username={}]'.format(
             self.service, self.username)
 
+    @classmethod
+    def lookup_by_user_id(cls, service_name, user_id):
+        return cls.query.filter_by(
+            service=service_name, user_id=user_id).first()
+        
 
 class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
