@@ -181,30 +181,39 @@ def publish(site):
         resp.headers['Location'] = twitter_url
         return resp
 
+    def get_tweet_id(original):
+        tweet_url = util.posse_post_discovery(original, TWEET_RE)
+        if tweet_url:
+            m = TWEET_RE.match(tweet_url)
+            if m:
+                return m.group(2)
+
     repost_of = request.form.get('repost-of')
     if repost_of:
-        m = TWEET_RE.match(repost_of)
-        if m:
-            tweet_id = m.group(2)
+        tweet_id = get_tweet_id(repost_of)
+        if tweet_id:
             return interpret_response(
                 requests.post(RETWEET_STATUS_URL.format(tweet_id), auth=auth))
 
     like_of = request.form.get('like-of')
     if like_of:
-        m = TWEET_RE.match(like_of)
-        if m:
-            tweet_id = m.group(2)
+        tweet_id = get_tweet_id(like_of)
+        if tweet_id:
             return interpret_response(
                 requests.post(FAVE_STATUS_URL, data={
                     'id': tweet_id,
                 }, auth=auth))
 
     data = {}
+    content = request.form.get('content')
+
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:
-        m = TWEET_RE.match(in_reply_to)
-        if m:
-            data['in_reply_to_status_id'] = m.group(2)
+        tweet_id = get_tweet_id(in_reply_to)
+        if tweet_id:
+            data['in_reply_to_status_id'] = tweet_id
+        else:
+            content = 're: {}, {}'.format(in_reply_to, content)
 
     location = request.form.get('location')
     current_app.logger.debug('received location param: %s', location)
@@ -214,7 +223,6 @@ def publish(site):
             data['lat'], data['long'] = latlong
 
     target_length = 140
-    content = request.form.get('content')
     permalink_url = request.form.get('url')
     photo_file = request.files.get('photo')
     if photo_file:
