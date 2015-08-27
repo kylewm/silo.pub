@@ -4,16 +4,17 @@
 <div class="container">
 
   {% block instructions %}
-
+  <p>
+    Awesome, you've authorized silo.pub to publish to
+    {{site.domain}} (Don't worry we won't do anything without your
+    permission). We're halfway there. Now let's convince a Micropub
+    client to post to silo.pub.
+  </p>
   <p>
     We just need to add some links to your homepage HTML
     to tell Micropub clients how to post to your site. When you log in
     to a client, it will first fetch your homepage and use these links
     to determine how to authorize you and publish to your site.
-  </p>
-  <p>
-    When you sign into a micropub client, silo.pub will delegate to your
-    blogging service's authentication mechanism to do the actual auth.
   </p>
 
   {% endblock instructions %}

@@ -31,7 +31,7 @@ def site():
     service = request.args.get('service')
     domain = request.args.get('domain')
     return redirect(url_for(
-        '.start', service=service, domain=domain))
+        '.micropub', service=service, domain=domain))
 
 
 @views.route('/setup/site/start/')
