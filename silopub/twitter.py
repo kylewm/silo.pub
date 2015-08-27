@@ -47,6 +47,7 @@ def proxy_homepage(username):
         <link rel="authorization_endpoint" href="{}">
         <link rel="token_endpoint" href="{}">
         <link rel="micropub" href="{}">
+        <link rel="me" href="{}">
     </head>
     <body>
         Micropub proxy for <a href="{}">@{}</a>
@@ -55,6 +56,7 @@ def proxy_homepage(username):
     url_for('micropub.indieauth', _external=True),
     url_for('micropub.token_endpoint', _external=True),
     url_for('micropub.micropub_endpoint', _external=True),
+    account.sites[0].url,
     account.sites[0].url,
     account.username)
 
