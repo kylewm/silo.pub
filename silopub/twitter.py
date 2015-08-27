@@ -188,34 +188,40 @@ def publish(site):
         if tweet_url:
             m = TWEET_RE.match(tweet_url)
             if m:
-                return m.group(2)
+                return m.group(1), m.group(2)
+
+    data = {}
+    content = request.form.get('content')
 
     repost_of = request.form.get('repost-of')
     if repost_of:
-        tweet_id = get_tweet_id(repost_of)
+        _, tweet_id = get_tweet_id(repost_of)
         if tweet_id:
             return interpret_response(
                 requests.post(RETWEET_STATUS_URL.format(tweet_id), auth=auth))
+        else:
+            content = 'Reposted: {}'.format(repost_of)
 
     like_of = request.form.get('like-of')
     if like_of:
-        tweet_id = get_tweet_id(like_of)
+        _, tweet_id = get_tweet_id(like_of)
         if tweet_id:
             return interpret_response(
                 requests.post(FAVE_STATUS_URL, data={
                     'id': tweet_id,
                 }, auth=auth))
-
-    data = {}
-    content = request.form.get('content')
+        else:
+            content = 'Liked: {}'.format(like_of)
 
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:
-        tweet_id = get_tweet_id(in_reply_to)
+        twitterer, tweet_id = get_tweet_id(in_reply_to)
         if tweet_id:
             data['in_reply_to_status_id'] = tweet_id
+            if '@' + twitterer not in content:
+                content = '@{} {}'.format(twitterer, content)
         else:
-            content = 're: {}, {}'.format(in_reply_to, content)
+            content = 'Re: {}, {}'.format(in_reply_to, content)
 
     location = request.form.get('location')
     current_app.logger.debug('received location param: %s', location)
