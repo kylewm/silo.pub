@@ -8,23 +8,28 @@ from silopub import micropub
 from silopub import ext
 from silopub.models import *
 import logging
+import logging.handlers
 import os
+import sys
+
+MAIL_FORMAT = '''\
+Message type:       %(levelname)s
+Location:           %(pathname)s:%(lineno)d
+Module:             %(module)s
+Function:           %(funcName)s
+Time:               %(asctime)s
+
+Message:
+
+%(message)s
+'''
 
 
 def create_app(config_path='../silopub.cfg'):
     app = Flask(__name__)
     app.config.from_pyfile(config_path)
 
-    print(app.config['SECRET_KEY'])
-
-    if not app.debug:
-        app.logger.setLevel(logging.DEBUG)
-        stream_handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        stream_handler.setFormatter(formatter)
-        app.logger.addHandler(stream_handler)
-
+    configure_logging(app)
     ext.init_app(app)
 
     app.register_blueprint(views)
@@ -40,3 +45,19 @@ def create_app(config_path='../silopub.cfg'):
     micropub.register_service('twitter', twitter)
 
     return app
+
+def configure_logging(app):
+    if app.debug:
+        return
+
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.addHandler(logging.StreamHandler(sys.stdout))
+
+    recipients = app.config.get('ADMIN_EMAILS')
+    if recipients:
+        error_handler = logging.handlers.SMTPHandler(
+            'localhost', 'silo.pub <silopub@kylewm.com>',
+            recipients, 'silo.pub error')
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(logging.Formatter(MAIL_FORMAT))
+        app.logger.addHandler(error_handler)

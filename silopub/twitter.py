@@ -189,6 +189,7 @@ def publish(site):
             m = TWEET_RE.match(tweet_url)
             if m:
                 return m.group(1), m.group(2)
+        return None, None
 
     data = {}
     content = request.form.get('content')
@@ -218,7 +219,8 @@ def publish(site):
         twitterer, tweet_id = get_tweet_id(in_reply_to)
         if tweet_id:
             data['in_reply_to_status_id'] = tweet_id
-            if '@' + twitterer not in content:
+            if (twitterer != site.account.username
+                and '@' + twitterer not in content):
                 content = '@{} {}'.format(twitterer, content)
         else:
             content = 'Re: {}, {}'.format(in_reply_to, content)
