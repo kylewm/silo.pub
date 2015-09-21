@@ -93,7 +93,7 @@ def get_authorize_url(redirect_uri):
     })
     
 
-def get_authenticate_url(redirect_uri):
+def get_authenticate_url(redirect_uri, **kwargs):
     csrf_token = generate_csrf()
     return API_AUTH_URL + '?' + urllib.parse.urlencode({
         'response_type': 'code',

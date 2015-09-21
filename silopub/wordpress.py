@@ -109,7 +109,7 @@ def callback():
                             domain=site.domain))
 
 
-def get_authenticate_url(callback_uri):
+def get_authenticate_url(callback_uri, **kwargs):
     # wordpress.com only lets us specify one redirect_uri, so we'll ignore
     # the passed in url and redirect to it later
     client_id = current_app.config['WORDPRESS_CLIENT_ID']

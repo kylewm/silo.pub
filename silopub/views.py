@@ -22,6 +22,10 @@ def account():
     if not account:
         abort(404)
 
+    if len(account.sites) == 1:
+        return redirect(url_for(
+            '.site', service=service, domain=account.sites[0].domain))
+
     return render_template(
         'account.jinja2', account=account)
 

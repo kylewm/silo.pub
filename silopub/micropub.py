@@ -71,7 +71,7 @@ def indieauth():
             'scope': request.args.get('scope', ''),
         }
         return redirect(SERVICES[site.service].get_authenticate_url(
-            url_for('.indieauth_callback', _external=True)))
+            url_for('.indieauth_callback', _external=True), me=me))
 
     except:
         current_app.logger.exception('Starting IndieAuth')

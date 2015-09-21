@@ -72,7 +72,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri):
+def get_authenticate_url(callback_uri, **kwargs):
     # Tumblr only has authorize, no authenticate
     oauth = OAuth1Session(
         client_key=current_app.config['TUMBLR_CLIENT_KEY'],

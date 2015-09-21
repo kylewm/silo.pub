@@ -1,3 +1,10 @@
+import html
+import requests
+import sys
+import json
+import re
+import urllib.parse
+
 from flask import Blueprint, current_app, redirect, url_for, request, flash
 from flask import make_response, session, abort
 from requests_oauthlib import OAuth1Session, OAuth1
@@ -6,12 +13,6 @@ from silopub import micropub
 from silopub.ext import db
 from silopub.models import Account, Twitter
 import brevity
-import html
-import requests
-import sys
-import json
-import re
-
 
 REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
 AUTHENTICATE_URL = 'https://api.twitter.com/oauth/authenticate'
@@ -110,14 +111,20 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri):
+def get_authenticate_url(callback_uri, me=None, **kwargs):
     oauth = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
     r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
     session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth.authorization_url(AUTHENTICATE_URL)
+
+    base_url = AUTHENTICATE_URL
+    if me:
+        base_url += '?' + urllib.parse.urlencode({
+            'screen_name': me.split('/')[-1],
+        })
+    return oauth.authorization_url(base_url)
 
 
 def get_authorize_url(callback_uri):
