@@ -74,8 +74,8 @@ def callback():
                             username=account.username))
 
 
-def get_authenticate_url(callback_uri):
-    return 'https://graph.facebook.com/oauth/authenticate?' + urlencode({
+def get_authenticate_url(callback_uri, **kwargs):
+    return 'https://www.facebook.com/dialog/oauth?' + urlencode({
         'client_id': current_app.config['FACEBOOK_CLIENT_ID'],
         'redirect_uri': callback_uri,
         'state': generate_csrf(),
@@ -150,7 +150,7 @@ def publish(site):
     permalink = request.form.get('url')
     photo_file = request.files.get('photo')
 
-    post_data = {}
+    post_data = {'access_token': site.account.token}
     post_files = None
     api_endpoint = 'https://graph.facebook.com/v2.5/me/feed'
 
@@ -160,8 +160,10 @@ def publish(site):
         post_data['link'] = permalink
         post_data['name'] = title
     else:
-        message = ('{} ({})'.format(content, permalink)
-                   if content else '({})'.format(permalink))
+        message = (
+            content if not permalink else
+            '({})'.format(permalink) if not content else
+            '{} ({})'.format(content, permalink))
         if photo_file:
             post_files = {'source': photo_file}
             post_data['caption'] = message
@@ -175,6 +177,8 @@ def publish(site):
             if linktok:
                 post_data['link'] = linktok.content
 
+    current_app.logger.info('Publishing to facebook %s: %s', 
+                            api_endpoint, post_data)
     r = requests.post(api_endpoint, data=post_data, files=post_files)
     r.raise_for_status()
 
