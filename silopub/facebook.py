@@ -1,12 +1,12 @@
 from flask import Blueprint, current_app, redirect, url_for, request, flash
 from flask import make_response, session, abort
 from flask.ext.wtf.csrf import generate_csrf, validate_csrf
-from requests_oauthlib import OAuth1Session, OAuth1
 from silopub import micropub
 from silopub import util
 from silopub.ext import db
 from silopub.models import Account, Facebook
 from urllib.parse import urlencode, parse_qs
+import brevity
 import html
 import json
 import re
@@ -18,6 +18,17 @@ PERMISSION_SCOPES = 'publish_actions'
 
 
 facebook = Blueprint('facebook', __name__)
+
+
+@facebook.route('/facebook.com/<user_id>')
+def proxy_homepage(user_id):
+    account = Account.query.filter_by(
+        service=SERVICE_NAME, user_id=user_id).first()
+
+    if not account:
+        abort(404)
+
+    return util.render_proxy_homepage(account.sites[0], account.username)
 
 
 @facebook.route('/facebook/authorize', methods=['POST'])
@@ -52,6 +63,7 @@ def callback():
 
     account.sites = [Facebook(
         url='https://www.facebook.com/{}'.format(account.user_id),
+        # overloading "domain" to really mean "user's canonical url"
         domain='facebook.com/{}'.format(account.user_id),
         site_id=account.user_id)]
 
@@ -130,3 +142,44 @@ def process_authenticate_callback(callback_uri):
         'username': user_info.get('name'),
         'user_info': user_info,
     }
+
+
+def publish(site):
+    title = request.form.get('name')
+    content = request.form.get('content[value]') or request.form.get('content')
+    permalink = request.form.get('url')
+    photo_file = request.files.get('photo')
+
+    post_data = {}
+    post_files = None
+    api_endpoint = 'https://graph.facebook.com/v2.5/me/feed'
+
+    if title and content:
+        # this looks like an article
+        post_data['message'] = '{}\n\n{}'.format(title, content)
+        post_data['link'] = permalink
+        post_data['name'] = title
+    else:
+        message = ('{} ({})'.format(content, permalink)
+                   if content else '({})'.format(permalink))
+        if photo_file:
+            post_files = {'source': photo_file}
+            post_data['caption'] = message
+            # TODO support album id as alternative to 'me'
+            api_endpoint = 'https://graph.facebook.com/v2.5/me/photos'
+        else:
+            post_data['message'] = message
+            tokens = brevity.tokenize(content)
+            # linkify the first url in the message
+            linktok = next((tok for tok in tokens if tok.tag == 'link'), None)
+            if linktok:
+                post_data['link'] = linktok.content
+
+    r = requests.post(api_endpoint, data=post_data, files=post_files)
+    r.raise_for_status()
+
+    resp_data = r.json()
+    fbid = resp_data.get('post_id') or resp_data.get('id')
+    resp = make_response('', 201)
+    resp.headers['Location'] = 'https://www.facebook.com/{}'.format(fbid)
+    return resp

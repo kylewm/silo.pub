@@ -34,32 +34,12 @@ twitter = Blueprint('twitter', __name__)
 @twitter.route('/twitter.com/<username>')
 def proxy_homepage(username):
     account = Account.query.filter_by(
-        service='twitter', username=username).first()
+        service=SERVICE_NAME, username=username).first()
 
     if not account:
         abort(404)
 
-    # TODO make endpoints visible because why not
-    return """
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <link rel="authorization_endpoint" href="{}">
-        <link rel="token_endpoint" href="{}">
-        <link rel="micropub" href="{}">
-        <link rel="me" href="{}">
-    </head>
-    <body>
-        Micropub proxy for <a href="{}">@{}</a>
-    </body>
-</html>""".format(
-    url_for('micropub.indieauth', _external=True),
-    url_for('micropub.token_endpoint', _external=True),
-    url_for('micropub.micropub_endpoint', _external=True),
-    account.sites[0].url,
-    account.sites[0].url,
-    account.username)
+    return util.render_proxy_homepage(account.sites[0], '@' + account.username)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])

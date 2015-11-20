@@ -17,7 +17,7 @@
         Micropub client:
       </p>
       <p>
-        <input style="width: 100%" type="text" value="#TODO"/>
+        <input style="width: 100%" type="text" value="{{ url_for('facebook.proxy_homepage', user_id=site.account.user_id, _external=True) }}"/>
       </p>
       <p>
         This page points to your Facebook identity and also tells the

@@ -1,4 +1,4 @@
-from flask import flash, current_app, make_response
+from flask import flash, current_app, make_response, url_for
 from requests.exceptions import HTTPError, SSLError
 import jwt
 import mf2py
@@ -86,7 +86,7 @@ def posse_post_discovery(original, regex):
         return original
 
     try:
-        d = mf2py.Parser(url=original).to_dict()
+        d = mf2py.parse(url=original)
         urls = d['rels'].get('syndication', [])
         for item in d['items']:
             if 'h-entry' in item['type']:
@@ -100,3 +100,26 @@ def posse_post_discovery(original, regex):
         current_app.logger.exception('SSL Error')
     except Exception as e:
         current_app.logger.exception('MF2 Parser error: %s', e)
+
+
+def render_proxy_homepage(site, username):
+    # TODO make endpoints visible because why not
+    return """
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="authorization_endpoint" href="{auth}">
+        <link rel="token_endpoint" href="{token}">
+        <link rel="micropub" href="{micropub}">
+        <link rel="me" href="{me}">
+    </head>
+    <body>
+        Micropub proxy for <a href="{me}">{username}</a>
+    </body>
+</html>""".format(
+      auth=url_for('micropub.indieauth', _external=True),
+      token=url_for('micropub.token_endpoint', _external=True),
+      micropub=url_for('micropub.micropub_endpoint', _external=True),
+      me=site.url,
+      username=username)
