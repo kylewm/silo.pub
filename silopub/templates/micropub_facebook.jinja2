@@ -1,0 +1,30 @@
+{% extends "micropub.jinja2" %}
+
+{% block instructions %}
+  {{ super() }}
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      <strong>Facebook</strong> is a little different than the other services
+    </div>
+    <div class="panel-body">
+      <p>
+        Normally, when you give a Micropub client your personal URL, it
+        fetches the page looking for &lt;link&gt; elements that tell it
+        where micropub requests should go. Because Facebook doesn't let you
+        add arbitrary &lt;link&gt; elements to your profile page, you
+        cannot use your Facebook profile URL to sign into Micropub. Instead
+        please use this "proxy" as your personal URL when signing into a
+        Micropub client:
+      </p>
+      <p>
+        <input style="width: 100%" type="text" value="#TODO"/>
+      </p>
+      <p>
+        This page points to your Facebook identity and also tells the
+        micropub client where to send all the bits.
+      </p>
+    </div>
+  </div>
+
+
+{% endblock %}

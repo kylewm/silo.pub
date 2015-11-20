@@ -50,7 +50,7 @@ class Account(db.Model):
     def lookup_by_user_id(cls, service_name, user_id):
         return cls.query.filter_by(
             service=service_name, user_id=user_id).first()
-        
+
 
 class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -156,3 +156,18 @@ class Twitter(Site):
 
     def __repr__(self):
         return 'Twitter[username={}]'.format(self.site_id)
+
+
+class Facebook(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'facebook'
+    }
+
+    def edit_template_url(self):
+        return None
+
+    def edit_profile_url(self):
+        return None
+
+    def __repr__(self):
+        return 'Facebook[username={}]'.format(self.site_id)

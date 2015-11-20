@@ -44,6 +44,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
 
+      <form method="post" name="facebook-start" action="{{ url_for('facebook.authorize') }}" class="signup">
+        <input alt="Sign in with Facebook"
+               src="{{ url_for('static', filename='facebook.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      </form>
+
     </div>
 
     <p style="margin-top: 40px;">
