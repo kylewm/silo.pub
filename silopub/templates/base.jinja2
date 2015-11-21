@@ -31,6 +31,12 @@
         box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
       }
     </style>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='dish32.png') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='dish64.png') }}">
+    <link rel="icon" type="image/png" sizes="128x128" href="{{ url_for('static', filename='dish128.png') }}">
+    <link rel="icon" type="image/png" sizes="256x256" href="{{ url_for('static', filename='dish256.png') }}">
+
     {% block head %}
     {% endblock head %}
   </head>
