@@ -50,15 +50,26 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">silo.pub</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li><a href="/">Home</a></li>
+            <li {% if request.endpoint == 'views.index' %}class="active"{% endif %}>
+              <a href="{{ url_for('views.index') }}">Home</a>
+            </li>
+            <li {% if request.endpoint == 'views.about' %}class="active"{% endif %}>
+              <a href="{{ url_for('views.about') }}">About</a>
+            </li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
     </nav>
+
+    <div class="container">
+      <h1>
+        <img id="logo" src="{{ url_for('static', filename='dish128.png') }}" />
+        silo.pub
+      </h1>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}

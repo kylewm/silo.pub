@@ -80,7 +80,7 @@ class Site(db.Model):
     def indieauth_url(self):
         return 'https://indieauth.com/auth?' + urllib.parse.urlencode({
             'me': self.url,
-            'client_id': 'https://silopub.herokuapp.com',
+            'client_id': 'https://silo.pub/',
         })
 
     @classmethod

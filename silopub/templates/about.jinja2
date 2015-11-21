@@ -1,0 +1,55 @@
+{% extends "base.jinja2" %}
+{% block body %}
+  <div class="container">
+
+    <h2 id="what">What</h2>
+
+    <p>
+      If you host a blog on Wordpress.com, Tumblr, or Blogger and want to author posts using
+      a <a href="https://indiewebcamp.com/micropub">Micropub</a> client like <a href="https://quill.p3k.io">Quill</a>
+      or a social reader like <a href="https://reader.kylewm.com">Woodwind</a>, silo.pub is for you!
+    </p>
+
+    <p>
+      Silo.pub translates micropub posts to various social APIs, and
+      provides an identity layer to use your hosted blogs as your
+      indieweb identity.
+    </p>
+
+    <h2 id="who">Who</h2>
+
+    <p>
+      &ldquo;Micropub for Hosted Blogs&rdquo; was originally
+      <a href="http://indiewebcamp.com/irc/2015-04-07#t1428449282044">suggested</a> by <a href="http://www.kevinmarks.com">Kevin Marks</a>,
+      <a href="https://snarfed.org/micropub-for-hosted-blogs">written up</a> by <a href="https://snarfed.org">Ryan Barrett</a>,
+      and <a href="https://github.com/kylewm/silo.pub">implemented</a> by <a href="https://kylewm.com">Kyle Mahan</a>.
+    </p>
+
+    <p>
+      It is <a href="https://github.com/kylewm/silo.pub">open source</a> and free to use. It is run by a volunteer in their spare time, so please be nice :)
+    </p>
+
+    <h2 id="contributing">Contributing</h2>
+
+    <p>
+      Yes please! Bug reports, feature requests, documentation and
+      code are all welcome. Get in touch
+      on <a href="https://github.com/kylewm/silo.pub">GitHub</a> or in
+      the #indiewebcamp IRC channel on Freenode.
+    </p>
+
+
+    <h2 id="privacy">Privacy</h2>
+
+    <p>
+      As much as possible, silo.pub tries to be a stateless adapter
+      from the micropub API to various social web APIs. It stores only
+      enough information to identify your account. It will only post
+      to your site when and what you tell it to. We will send you
+      email, never sell or distribute your information, or do not have
+      access to any of your passwords.
+    </p>
+
+  </div>
+
+{% endblock %}

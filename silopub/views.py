@@ -12,6 +12,11 @@ def index():
     return render_template('index.jinja2')
 
 
+@views.route('/about')
+def about():
+    return render_template('about.jinja2')
+
+
 @views.route('/setup/user/')
 def account():
     service = request.args.get('service')
