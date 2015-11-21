@@ -180,7 +180,7 @@ def publish(site):
     if r.status_code // 100 != 2:
         current_app.logger.warn(
             'Tumblr publish failed with response %s', r.text)
-        return r.text, r.status_code
+        return util.wrap_silo_error_response(r)
 
     location = None
     if 'Location' in r.headers:
@@ -197,7 +197,4 @@ def publish(site):
             if posts:
                 location = posts[0].get('post_url')
 
-    result = make_response('', 201)
-    if location:
-        result.headers['Location'] = location
-    return result
+    return util.make_publish_success_response(location)

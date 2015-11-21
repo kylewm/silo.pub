@@ -39,7 +39,9 @@ def indieauth():
         for key, value in [('client_id', client_id),
                            ('redirect_uri', redirect_uri), ('state', state)]:
             if data.get(key) != value:
-                current_app.logger.warn('%s mismatch. expected=%s, received=%s', key, data.get(key), value)
+                current_app.logger.warn(
+                    '%s mismatch. expected=%s, received=%s',
+                    key, data.get(key), value)
                 return util.urlenc_response({'error': key + ' mismatch'}, 400)
 
         me = data.get('me')
@@ -50,9 +52,12 @@ def indieauth():
         me = request.args.get('me')
         redirect_uri = request.args.get('redirect_uri')
 
-        current_app.logger.info('get indieauth with me=%s and redirect=%s', me, redirect_uri)
+        current_app.logger.info('get indieauth with me=%s and redirect=%s', me,
+                                redirect_uri)
         if not me or not redirect_uri:
-            resp = make_response("This is SiloPub's authorization endpoint. At least 'me' and 'redirect_uri' are required.")
+            resp = make_response(
+                "This is SiloPub's authorization endpoint. At least 'me' and "
+                "'redirect_uri' are required.")
             resp.headers['IndieAuth'] = 'authorization_endpoint'
             return resp
 
@@ -114,7 +119,8 @@ def indieauth_callback():
         service=my_site.service, user_id=result['user_id']).first()
 
     if not authed_account:
-        current_app.logger.warn('Auth failed, unknown account %s', result['user_id'])
+        current_app.logger.warn(
+            'Auth failed, unknown account %s', result['user_id'])
         return redirect(util.set_query_params(
             redirect_uri,
             error='Authorization failed. Unknown account {}'
@@ -162,20 +168,14 @@ def token_endpoint():
     for key, value in [('me', me), ('client_id', client_id),
                        ('redirect_uri', redirect_uri), ('state', state)]:
         if data.get(key) != value:
-            current_app.logger.warn('%s mismatch. expected=%s, received=%s', key, data.get(key), value)
+            current_app.logger.warn('%s mismatch. expected=%s, received=%s',
+                                    key, data.get(key), value)
             return util.urlenc_response({'error': key + ' mismatch'}, 400)
 
     # ok we're confirmed, create an access token
     scope = data.get('scope', '')
     site_id = data.get('site')
-
-    token = util.jwt_encode({
-        'me': me,
-        'site': site_id,
-        'client_id': client_id,
-        'scope': scope,
-        'date_issued': datetime.datetime.utcnow().isoformat()
-    })
+    token = util.generate_access_token(me, site_id, client_id, scope)
 
     return util.urlenc_response({
         'access_token': token,

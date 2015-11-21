@@ -157,18 +157,14 @@ def publish(site):
         resource_owner_secret=site.account.token_secret)
 
     def interpret_response(result):
-        result.raise_for_status()
+        if result.status_code // 100 != 2:
+            return util.wrap_silo_error_response(result)
 
         result_json = result.json()
-        current_app.logger.debug("response from twitter {}".format(
-            json.dumps(result_json, indent=True)))
         twitter_url = 'https://twitter.com/{}/status/{}'.format(
             result_json.get('user', {}).get('screen_name'),
             result_json.get('id_str'))
-
-        resp = make_response('', 201)
-        resp.headers['Location'] = twitter_url
-        return resp
+        return util.make_publish_success_response(twitter_url, result_json)
 
     def get_tweet_id(original):
         tweet_url = util.posse_post_discovery(original, TWEET_RE)

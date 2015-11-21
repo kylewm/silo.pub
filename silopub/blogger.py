@@ -91,7 +91,7 @@ def get_authorize_url(redirect_uri):
         'access_type': 'offline', # necessary to get refresh token
         'approval_prompt': 'force',
     })
-    
+
 
 def get_authenticate_url(redirect_uri, **kwargs):
     csrf_token = generate_csrf()
@@ -127,7 +127,7 @@ def process_authenticate_callback(redirect_uri):
         return {'error': 'failed to validate access token'}
 
     current_app.logger.info('Got Blogger access token response: %s', r.text)
-        
+
     payload = r.json()
     access_token = payload.get('access_token')
     expires_in = payload.get('expires_in')
@@ -171,17 +171,17 @@ def process_authenticate_callback(redirect_uri):
 
 
 def maybe_refresh_access_token(account):
-    if (account.refresh_token and account.expiry 
+    if (account.refresh_token and account.expiry
             and account.expiry <= datetime.datetime.utcnow()):
         current_app.logger.info('refreshing access token for %s', account.username)
-        
+
         r = requests.post(API_TOKEN_URL, data={
             'refresh_token': account.refresh_token,
             'client_id': current_app.config['GOOGLE_CLIENT_ID'],
             'client_secret': current_app.config['GOOGLE_CLIENT_SECRET'],
             'grant_type': 'refresh_token',
         })
-        
+
         if r.status_code // 100 != 2:
             current_app.logger.warn('Failed to refresh access token %s', r.text)
             return False
@@ -195,7 +195,7 @@ def maybe_refresh_access_token(account):
         account.token = access_token
         account.expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in))
         db.session.commit()
-        
+
     return True
 
 
@@ -242,7 +242,7 @@ def publish(site):
     }
     """
     maybe_refresh_access_token(site.account)
-    
+
     type = request.form.get('h')
     create_post_url = API_CREATE_POST_URL.format(site.site_id)
 
@@ -263,10 +263,8 @@ def publish(site):
         r, r.content, r.headers)
 
     if r.status_code // 100 != 2:
-        current_app.logger.error(
-            'post to blogger failed! %s %s', r, r.text)
-        return r.text, r.status_code
+        return util.wrap_silo_error_response(r)
 
-    resp = make_response('', 201)
-    resp.headers['Location'] = r.json().get('url')
-    return resp
+    success_data = r.json()
+    return util.make_publish_success_response(
+        success_data.get('url'), data=success_data)

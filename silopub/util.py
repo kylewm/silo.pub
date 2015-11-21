@@ -1,9 +1,11 @@
-from flask import flash, current_app, make_response, url_for
+import datetime
+import random
+import urllib.parse
+
+from flask import flash, current_app, make_response, url_for, jsonify
 from requests.exceptions import HTTPError, SSLError
 import jwt
 import mf2py
-import random
-import urllib.parse
 
 
 def domain_for_url(url):
@@ -54,6 +56,17 @@ def jwt_encode(obj):
 
 def jwt_decode(s):
     return jwt.decode(s, current_app.config['SECRET_KEY'])
+
+
+def generate_access_token(me, site_id, client_id, scope):
+    token = jwt_encode({
+        'me': me,
+        'site': site_id,
+        'client_id': client_id,
+        'scope': scope,
+        'date_issued': datetime.datetime.utcnow().isoformat()
+    })
+    return token
 
 
 def get_complex_content(data):
@@ -123,3 +136,37 @@ def render_proxy_homepage(site, username):
       micropub=url_for('micropub.micropub_endpoint', _external=True),
       me=site.url,
       username=username)
+
+
+def make_publish_success_response(location, data=None):
+    current_app.logger.debug('Publish success, location=%s, data=%r',
+                             location, data)
+    resp = jsonify(data or {})
+    resp.status_code = 201
+    resp.headers['Location'] = location
+    return resp
+
+
+def make_publish_error_response(message):
+    current_app.logger.error('Local error: %s', message)
+    resp = jsonify({
+        'error': message,
+    })
+    resp.status_code = 400
+    return resp
+
+
+def wrap_silo_error_response(r):
+    current_app.logger.error('Upstream error: %r %s', r, r.text)
+    try:
+        resp_data = r.json()
+    except:
+        resp_data = r.text
+
+    resp = jsonify({
+        'error': 'Bad Upstream Response',
+        'upstream-status': r.status_code,
+        'upstream-data': resp_data,
+    })
+    resp.status_code = 400
+    return resp

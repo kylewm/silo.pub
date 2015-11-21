@@ -93,23 +93,24 @@ def micropub():
     token_endpt = None
     upub_endpt = None
 
-    r = requests.get(site.url)
-    if r.status_code // 100 != 2:
-        flash('Error fetching your homepage ({}): {}'.format(
-            r.status_code, r.text))
-    else:
-        soup = BeautifulSoup(r.text)
+    if service in ('wordpress', 'tumblr', 'blogger'):
+        r = requests.get(site.url)
+        if r.status_code // 100 != 2:
+            flash('Error fetching your homepage ({}): {}'.format(
+                r.status_code, r.text))
+        else:
+            soup = BeautifulSoup(r.text)
 
-        auth = soup.find_all(['a', 'link'], rel='authorization_endpoint')
-        token = soup.find_all(['a', 'link'], rel='token_endpoint')
-        upub = soup.find_all(['a', 'link'], rel='micropub')
+            auth = soup.find_all(['a', 'link'], rel='authorization_endpoint')
+            token = soup.find_all(['a', 'link'], rel='token_endpoint')
+            upub = soup.find_all(['a', 'link'], rel='micropub')
 
-        auth_endpt = next(
-            (a.get('href') for a in auth if a.get('href')), None)
-        token_endpt = next(
-            (a.get('href') for a in token if a.get('href')), None)
-        upub_endpt = next(
-            (a.get('href') for a in upub if a.get('href')), None)
+            auth_endpt = next(
+                (a.get('href') for a in auth if a.get('href')), None)
+            token_endpt = next(
+                (a.get('href') for a in token if a.get('href')), None)
+            upub_endpt = next(
+                (a.get('href') for a in upub if a.get('href')), None)
 
     return render_template(
         'micropub_{}.jinja2'.format(site.service),

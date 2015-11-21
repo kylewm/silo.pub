@@ -207,19 +207,15 @@ def publish(site):
 
     req = requests.Request('POST', new_post_url, data=util.trim_nulls(data),
                            files=files, headers={
-                               'Authorization': 'Bearer ' + site.token
-                           })
+                               'Authorization': 'Bearer ' + site.token,
+    })
 
     req = req.prepare()
     s = requests.Session()
     r = s.send(req)
 
     if r.status_code // 100 != 2:
-        err_msg = ('Wordpress publish failed with response <pre>{}</pre>'
-                   .format(r.text))
-        current_app.logger.warn(err_msg)
-        return err_msg, 401
+        return util.wrap_silo_error_response(r)
 
-    result = make_response('', 201)
-    result.headers['Location'] = r.json().get('URL')
-    return result
+    r_data = r.json()
+    return util.make_publish_success_response(r_data.get('URL'), data=r_data)

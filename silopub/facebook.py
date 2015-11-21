@@ -34,7 +34,7 @@ def proxy_homepage(user_id):
 @facebook.route('/facebook/authorize', methods=['POST'])
 def authorize():
     try:
-        current_app.logger.info('Redirecting to Facebook authorize')
+        current_app.logger.debug('Redirecting to Facebook authorize')
         callback_uri = url_for('.callback', _external=True)
         return redirect(get_authorize_url(callback_uri))
     except:
@@ -120,7 +120,7 @@ def process_authenticate_callback(callback_uri):
                 'description: {}' .format(r.status_code, error, error_desc)}
 
     payload = parse_qs(r.text)
-    current_app.logger.info('auth responses from Facebook %s', payload)
+    current_app.logger.debug('auth responses from Facebook %s', payload)
     access_token = payload['access_token'][0]
 
     r = requests.get('https://graph.facebook.com/v2.5/me', params={
@@ -135,7 +135,7 @@ def process_authenticate_callback(callback_uri):
                 'description: {}' .format(r.status_code, error, error_desc)}
 
     user_info = r.json()
-    current_app.logger.info('authed user info from Facebook %s', user_info)
+    current_app.logger.debug('authed user info from Facebook %s', user_info)
     return {
         'token': access_token,
         'user_id': user_info.get('id'),
@@ -170,6 +170,9 @@ def publish(site):
             # TODO support album id as alternative to 'me'
             api_endpoint = 'https://graph.facebook.com/v2.5/me/photos'
         else:
+            if not message:
+                return util.make_publish_error_response(
+                    'Request must contain a photo or content')
             post_data['message'] = message
             tokens = brevity.tokenize(content)
             # linkify the first url in the message
@@ -177,13 +180,46 @@ def publish(site):
             if linktok:
                 post_data['link'] = linktok.content
 
-    current_app.logger.info('Publishing to facebook %s: %s', 
-                            api_endpoint, post_data)
+    current_app.logger.debug(
+        'Publishing to facebook %s: %s', api_endpoint, post_data)
     r = requests.post(api_endpoint, data=post_data, files=post_files)
-    r.raise_for_status()
+
+    # need Web Canvas permissions to do this, which I am too lazy to apply for
+    # if r.status_code == 400:
+    #     error_data = r.json().get('error', {})
+    #     code = error_data.get('code')
+    #     subcode = error_data.get('subcode')
+    #     # token is expired or otherwise invalid
+    #     if code == 190:
+    #         send_token_expired_notification(
+    #             site.account.user_id,
+    #             "silo.pub's Facebook access token has expired. Click the "
+    #             "Facebook button on silo.pub's homepage to renew.",
+    #             'https://silo.pub/')
+
+    if r.status_code // 100 != 2:
+        return util.wrap_silo_error_response(r)
 
     resp_data = r.json()
     fbid = resp_data.get('post_id') or resp_data.get('id')
-    resp = make_response('', 201)
-    resp.headers['Location'] = 'https://www.facebook.com/{}'.format(fbid)
-    return resp
+    return util.make_publish_success_response(
+        'https://www.facebook.com/{}'.format(fbid),
+        data=resp_data)
+
+
+def send_token_expired_notification(user_id, text, link):
+    current_app.logger.debug(
+        'Sending Facebook notification: %r, %s', text, link)
+
+    r = requests.post(
+        'https://graph.facebook.com/v2.5/{}/notifications'.format(user_id),
+        data={
+            'template': text,
+            'href': link,
+            # this is a synthetic app access token.
+            # https://developers.facebook.com/docs/facebook-login/access-tokens/#apptokens
+            'access_token': '|'.join(
+                (current_app.config['FACEBOOK_CLIENT_ID'],
+                 current_app.config['FACEBOOK_CLIENT_SECRET']))
+        })
+    current_app.logger.debug('Response: %s %s', r.status_code, r.text)
