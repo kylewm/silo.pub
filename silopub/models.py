@@ -148,12 +148,6 @@ class Twitter(Site):
         'polymorphic_identity': 'twitter'
     }
 
-    def edit_template_url(self):
-        return None
-
-    def edit_profile_url(self):
-        return None
-
     def __repr__(self):
         return 'Twitter[username={}]'.format(self.site_id)
 
@@ -163,11 +157,14 @@ class Facebook(Site):
         'polymorphic_identity': 'facebook'
     }
 
-    def edit_template_url(self):
-        return None
-
-    def edit_profile_url(self):
-        return None
-
     def __repr__(self):
         return 'Facebook[username={}]'.format(self.site_id)
+
+
+class Flickr(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'flickr'
+    }
+
+    def __repr__(self):
+        return 'Flickr[username={}]'.format(self.site_id)

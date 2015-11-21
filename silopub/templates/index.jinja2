@@ -49,6 +49,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
 
+      <form method="post" name="flickr-start" action="{{ url_for('flickr.authorize') }}" class="signup">
+        <input alt="Sign in with Flickr"
+               src="{{ url_for('static', filename='flickr.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      </form>
+
     </div>
 
 

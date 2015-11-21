@@ -45,10 +45,30 @@
       As much as possible, silo.pub tries to be a stateless adapter
       from the micropub API to various social web APIs. It stores only
       enough information to identify your account. It will only post
-      to your site when and what you tell it to. We will send you
-      email, never sell or distribute your information, or do not have
+      to your site when and what you tell it to. We will never send you
+      email, never sell or distribute your information, and do not have
       access to any of your passwords.
     </p>
+
+    <h2 id="proxy">Proxy Homepages</h2>
+
+    <p>
+      Normally, when you give a micropub client your personal URL, it
+      fetches the page looking for &lt;link&gt; elements that tell it
+      where micropub requests should go. Because social sites like
+      Twitter and Facebook don't let you add arbitrary &lt;link&gt;
+      elements to your profile page, silo.pub provides a special
+      &ldquo;proxy&rdquo; homepage for each account.
+    </p>
+
+    <p>
+      The proxy homepage has just enough information to tell micropub
+      clients how to auth you and where they should send publish
+      requests. So, instead of logging in to micropub clients with
+      your personal URL, you will need to use this proxy URL (e.g.
+      https://silo.pub/twitter.com/kylewmahan).
+    </p>
+
 
   </div>
 
