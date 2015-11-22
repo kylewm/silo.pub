@@ -1,9 +1,15 @@
 machine:
   python:
     version: 3.4.0
+
+dependencies:
+  pre:
+    - pip install fabric
+
 test:
   override:
     - python -m unittest discover
+
 deployment:
   prod:
     branch: master
