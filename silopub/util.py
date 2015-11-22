@@ -1,5 +1,6 @@
 import datetime
 import random
+import re
 import urllib.parse
 
 from flask import flash, current_app, make_response, url_for, jsonify
@@ -8,9 +9,20 @@ import jwt
 import mf2py
 
 
-def domain_for_url(url):
+def looks_like_a_url(text):
+    return re.match(
+        r'(http|https|file|irc|mailto):/{0,3}[\w\-\.]*[a-z]{2,}',
+        text, re.IGNORECASE) is not None
+
+
+def domain_for_url(url, strip_prefix=False):
     p = urllib.parse.urlparse(url)
-    return p.netloc
+    domain = p.netloc
+    if strip_prefix:
+        for prefix in ('www.', 'mobile.', 'm.'):
+            if domain.startswith(prefix):
+                domain = domain[len(prefix):]
+    return domain
 
 
 def prettify_url(url):
@@ -170,3 +182,18 @@ def wrap_silo_error_response(r):
     })
     resp.status_code = 400
     return resp
+
+
+def get_possible_array_value(args, key):
+    """Micropub uses PHP-style array params, like category[], to indicate
+    a multi-valued key. Python doesn't do any special handling with
+    these which means we have to work a little harder to support them.
+
+    :param werkzeug.datastructures.MultiDict args: incoming request args
+    :param string key: the bare key name (e.g. "category")
+
+    :return list: the, possibly empty, list of values
+    """
+    if key in args:
+        return [args.get(key)]
+    return args.getlist(key + '[]')

@@ -171,27 +171,27 @@ def call_api_method(http_method, flickr_method, params,
 
 
 def upload(params, photo_file, token=None, secret=None, site=None):
-  auth = OAuth1(
-      client_key=current_app.config['FLICKR_CLIENT_KEY'],
-      client_secret=current_app.config['FLICKR_CLIENT_SECRET'],
-      resource_owner_key=token or site.token or site.account.token,
-      resource_owner_secret=secret or site.token_secret
-      or site.account.token_secret,
-      signature_type=SIGNATURE_TYPE_BODY)
+    auth = OAuth1(
+        client_key=current_app.config['FLICKR_CLIENT_KEY'],
+        client_secret=current_app.config['FLICKR_CLIENT_SECRET'],
+        resource_owner_key=token or site.token or site.account.token,
+        resource_owner_secret=secret or site.token_secret
+        or site.account.token_secret,
+        signature_type=SIGNATURE_TYPE_BODY)
 
-  # create a request without files for signing
-  faux_req = requests.Request(
-    'POST', UPLOAD_URL, data=params, auth=auth).prepare()
-  # parse the signed parameters back out of the body
-  data = urllib.parse.parse_qsl(faux_req.body)
+    # create a request without files for signing
+    faux_req = requests.Request(
+        'POST', UPLOAD_URL, data=params, auth=auth).prepare()
+    # parse the signed parameters back out of the body
+    data = urllib.parse.parse_qsl(faux_req.body)
 
-  # and use them in the real request
-  current_app.logger.debug('uploading with data: %s', data)
-  resp = requests.post(UPLOAD_URL, data=data, files={
-    'photo': photo_file,
-  })
-  current_app.logger.debug('upload response: %s, %s', resp, resp.text)
-  return resp
+    # and use them in the real request
+    current_app.logger.debug('uploading with data: %s', data)
+    resp = requests.post(UPLOAD_URL, data=data, files={
+        'photo': photo_file,
+    })
+    current_app.logger.debug('upload response: %s, %s', resp, resp.text)
+    return resp
 
 
 def interpret_upload_response(resp):
@@ -274,6 +274,46 @@ def publish(site):
     photo_id, error = interpret_upload_response(r)
     if error:
         return util.make_publish_error_response(error)
+
+    # maybe add some tags or people
+    cats = util.get_possible_array_value(request.form, 'category')
+    tags = []
+    user_ids = []
+
+    for cat in cats:
+        if util.looks_like_a_url(cat):
+            resp = call_api_method(
+                'GET', 'flickr.urls.lookupUser', {'url': cat}, site=site)
+            if resp.status_code // 100 != 2:
+                current_app.logger.error(
+                    'Error looking up user by url %s. Response: %r, %s',
+                    cat, resp, resp.text)
+            result = resp.json()
+            if result.get('stat') == 'fail':
+                current_app.logger.debug(
+                    'User not found for url %s', cat)
+            else:
+                user_id = result.get('user', {}).get('id')
+                if user_id:
+                    user_ids.append(user_id)
+        else:
+            tags.append('"' + cat + '"')
+
+    if tags:
+        current_app.logger.debug('Adding tags: %s', ','.join(tags))
+        resp = call_api_method('POST', 'flickr.photos.addTags', {
+            'photo_id': photo_id,
+            'tags': ','.join(tags),
+        }, site=site)
+        current_app.logger.debug('Added tags: %r, %s', resp, resp.text)
+
+    for user_id in user_ids:
+        current_app.logger.debug('Tagging user id: %s', user_id)
+        resp = call_api_method('POST', 'flickr.photos.people.add', {
+            'photo_id': photo_id,
+            'user_id': user_id,
+        }, site=site)
+        current_app.logger.debug('Tagged person: %r, %s', resp, resp.text)
 
     return util.make_publish_success_response(
         'https://www.flickr.com/photos/{}/{}/'.format(
