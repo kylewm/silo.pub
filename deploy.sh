@@ -1,9 +1,10 @@
 #!/bin/bash
 
+REMOTE_USER=kmahan
 HOST=orin.kylewm.com
 REMOTE_PATH=/srv/www/silo.pub/silopub
 
-ssh $HOST bash -c "'
+ssh $REMOTE_USER@$HOST bash -c "'
 
 set -x
 cd $REMOTE_PATH
