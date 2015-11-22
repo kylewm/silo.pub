@@ -105,7 +105,7 @@ def callback():
     db.session.commit()
 
     flash('Authorized {}: {}'.format(account.username, site.domain))
-    return redirect(url_for('views.site', service=SERVICE_NAME,
+    return redirect(url_for('views.setup_site', service=SERVICE_NAME,
                             domain=site.domain))
 
 

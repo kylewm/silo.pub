@@ -75,7 +75,7 @@ def callback():
     flash('Authorized {}: {}'.format(account.username, ', '.join(
         s.domain for s in account.sites)))
 
-    return redirect(url_for('views.account',
+    return redirect(url_for('views.setup_account',
                             service=SERVICE_NAME,
                             username=account.username))
 

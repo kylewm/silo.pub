@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, abort, redirect, url_for, flash, request
+from flask import Blueprint, render_template, abort, redirect, url_for, flash
+from flask import request
 from silopub.models import Account, Site
 import requests
 from bs4 import BeautifulSoup
@@ -17,8 +18,8 @@ def about():
     return render_template('about.jinja2')
 
 
-@views.route('/setup/user/')
-def account():
+@views.route('/setup/account/')
+def setup_account():
     service = request.args.get('service')
     username = request.args.get('username')
     account = Account.query.filter_by(
@@ -29,35 +30,22 @@ def account():
 
     if len(account.sites) == 1:
         return redirect(url_for(
-            '.site', service=service, domain=account.sites[0].domain))
+            '.setup_site', service=service, domain=account.sites[0].domain))
 
     return render_template(
         'account.jinja2', account=account)
 
 
 @views.route('/setup/site/')
-def site():
+def setup_site():
     service = request.args.get('service')
     domain = request.args.get('domain')
     return redirect(url_for(
-        '.micropub', service=service, domain=domain))
+        '.setup_micropub', service=service, domain=domain))
 
 
-@views.route('/setup/site/start/')
-def start():
-    service = request.args.get('service')
-    domain = request.args.get('domain')
-    site = Site.query.filter_by(
-        service=service, domain=domain).first()
-    if not site:
-        abort(404)
-
-    return render_template(
-        'start.jinja2', site=site)
-
-
-@views.route('/setup/site/indieauth/')
-def indieauth():
+@views.route('/setup/indieauth/')
+def setup_indieauth():
     service = request.args.get('service')
     domain = request.args.get('domain')
     site = Site.query.filter_by(
@@ -80,8 +68,8 @@ def indieauth():
         site=site, mes=mes)
 
 
-@views.route('/setup/site/micropub/')
-def micropub():
+@views.route('/setup/micropub/')
+def setup_micropub():
     service = request.args.get('service')
     domain = request.args.get('domain')
     site = Site.query.filter_by(
@@ -113,7 +101,7 @@ def micropub():
                 (a.get('href') for a in upub if a.get('href')), None)
 
     return render_template(
-        'micropub_{}.jinja2'.format(site.service),
+        ['micropub_{}.jinja2'.format(site.service), 'micropub.jinja2'],
         site=site, authorization_endpoint=auth_endpt,
         token_endpoint=token_endpt,
         micropub=upub_endpt)
