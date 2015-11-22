@@ -4,3 +4,8 @@ machine:
 test:
   override:
     - python -m unittest discover
+deployment:
+  prod:
+    branch: master
+    commands:
+      - fab deploy
