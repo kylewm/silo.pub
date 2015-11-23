@@ -175,7 +175,7 @@ def publish(site):
         return None, None
 
     data = {}
-    content = request.form.get('content')
+    content = request.form.get('content[value]') or request.form.get('content')
 
     repost_of = request.form.get('repost-of')
     if repost_of:
@@ -196,6 +196,9 @@ def publish(site):
                 }, auth=auth))
         else:
             content = 'Liked: {}'.format(like_of)
+
+    if not content:
+        return util.make_publish_error_response('Missing "content" property')
 
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:

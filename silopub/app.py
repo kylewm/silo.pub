@@ -27,9 +27,12 @@ Message:
 '''
 
 
-def create_app(config_path='../silopub.cfg'):
+def create_app(config_path='../silopub.cfg', configurator=None):
     app = Flask(__name__)
-    app.config.from_pyfile(config_path)
+    if configurator:
+        configurator(app)
+    else:
+        app.config.from_pyfile(config_path)
 
     configure_logging(app)
     ext.init_app(app)
