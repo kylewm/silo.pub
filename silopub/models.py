@@ -97,6 +97,19 @@ class Site(db.Model):
         return 'Site[domain={}]'.format(self.domain)
 
 
+class Token(db.Model):
+    token = db.Column(db.String(256), primary_key=True)
+    issued_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
+    site_id = db.Column(db.Integer, db.ForeignKey(Site.id))
+    site = db.relationship('Site')
+    scope = db.Column(db.String)
+    client_id = db.Column(db.String)
+
+    def __repr__(self):
+        return 'Token[{}]'.format(self.token)
+
+
 class Blogger(Site):
     __mapper_args__ = {
         'polymorphic_identity': 'blogger'

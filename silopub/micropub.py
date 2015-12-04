@@ -1,12 +1,15 @@
 from silopub import util
-from silopub.ext import csrf, redis
-from silopub.models import Site, Account
+from silopub.ext import csrf, redis, db
+from silopub.models import Site, Account, Token
 from flask import Blueprint, redirect, url_for, current_app, request, abort
 from flask import jsonify, session, make_response
 import datetime
 import json
 import sys
 import uuid
+import binascii
+import os
+
 
 SERVICES = {}
 micropub = Blueprint('micropub', __name__)
@@ -133,7 +136,7 @@ def indieauth_callback():
             .format(authed_account.username, my_site.domain)))
 
     # hand back a code to the micropub client
-    code = uuid.uuid4().hex
+    code = binascii.hexlify(os.urandom(16)).decode()
     redis.setex('indieauth-code:{}'.format(code),
                 datetime.timedelta(minutes=5),
                 json.dumps({
@@ -175,11 +178,30 @@ def token_endpoint():
     # ok we're confirmed, create an access token
     scope = data.get('scope', '')
     site_id = data.get('site')
-    token = util.generate_access_token(me, site_id, client_id, scope)
+    site = Site.query.get(site_id)
+
+    if not site_id or not site:
+        return util.urlenc_response(
+            {'error', 'No site for authorization code!'}, 400)
+
+    # look for existing token
+    now = datetime.datetime.utcnow()
+    token = Token.query.filter_by(site=site, scope=scope,
+                                  client_id=client_id).first()
+
+    if token:
+        token.updated_at = now
+    else:
+        token = Token(token=binascii.hexlify(os.urandom(16)).decode(),
+                      site=site, scope=scope, client_id=client_id,
+                      issued_at=now, updated_at=now)
+        db.session.add(token)
+
+    db.session.commit()
 
     return util.urlenc_response({
-        'access_token': token,
-        'me': me,
+        'access_token': token.token,
+        'me': site.url,
         'scope': scope,
     })
 
@@ -206,27 +228,29 @@ def micropub_endpoint():
         current_app.logger.warn(err_msg)
         return err_msg, 401
 
-    token_data = util.jwt_decode(token)
-
-    if not token_data:
-        err_msg = 'Unrecognized token: {}' .format(token)
-        current_app.logger.warn(err_msg)
-        return err_msg, 401
-
-    me = token_data.get('me')
-    site_id = token_data.get('site')
-    scope = token_data.get('scope')
-    client_id = token_data.get('client_id')
-
     # indieauth has confirmed that me is who they say they are, so if we have
     # an access token for their api, then we should be good to go
 
-    site = Site.query.get(site_id)
+    # new short tokens
+    token_data = Token.query.get(token)
+    if token_data:
+        site = token_data.site
 
-    if not site:
-        err_msg = 'Could not find a site for site id {}.'.format(site_id)
-        current_app.logger.warn(err_msg)
-        return err_msg, 401
+    # old JWT tokens (TODO how do I get rid of these??)
+    else:
+        token_data = util.jwt_decode(token)
+
+        if not token_data:
+            err_msg = 'Unrecognized token: {}' .format(token)
+            current_app.logger.warn(err_msg)
+            return err_msg, 401
+        site_id = token_data.get('site')
+        site = Site.query.get(site_id)
+
+        if not site:
+            err_msg = 'Could not find a site for site id {}.'.format(site_id)
+            current_app.logger.warn(err_msg)
+            return err_msg, 401
 
     current_app.logger.info('Success! Publishing to %s', site)
     return SERVICES[site.service].publish(site)

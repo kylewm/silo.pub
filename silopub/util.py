@@ -71,6 +71,7 @@ def jwt_decode(s):
 
 
 def generate_access_token(me, site_id, client_id, scope):
+    # deprecated
     token = jwt_encode({
         'me': me,
         'site': site_id,
