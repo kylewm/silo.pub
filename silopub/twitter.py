@@ -92,8 +92,8 @@ def callback():
 
 
 def get_authenticate_url(callback_uri, me=None, **kwargs):
-    del session['oauth_token']
-    del session['oauth_token_secret']
+    session.pop('oauth_token', None)
+    session.pop('oauth_token_secret', None)
     oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
@@ -111,8 +111,8 @@ def get_authenticate_url(callback_uri, me=None, **kwargs):
 
 
 def get_authorize_url(callback_uri):
-    del session['oauth_token']
-    del session['oauth_token_secret']
+    session.pop('oauth_token', None)
+    session.pop('oauth_token_secret', None)
     oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
@@ -142,10 +142,10 @@ def process_authenticate_callback(callback_uri):
     access_token = r.get('oauth_token')
     access_token_secret = r.get('oauth_token_secret')
 
-    print('request token', request_token,
-          'request_token_secret', request_token_secret)
-    print('access token', access_token,
-          'access_token_secret', access_token_secret)
+    current_app.logger.debug('request token: %s, secret: %s',
+                             request_token, request_token_secret)
+    current_app.logger.debug('access token: %s, secret: %s',
+                             access_token, access_token_secret)
 
     auth = OAuth1(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],

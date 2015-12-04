@@ -45,7 +45,7 @@ class TestTwitter(SiloPubTestCase):
                 auth_url)
             post.assert_called_once()
 
-    @patch('requests_oauthlib.OAuth1Session.get')
+    @patch('requests.get')
     @patch('requests_oauthlib.OAuth1Session.fetch_access_token')
     def test_process_authenticate_callback(self, fetch_access_token, getter):
         with self.app.test_request_context():
