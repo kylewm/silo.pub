@@ -56,6 +56,9 @@
             <li {% if request.endpoint == 'views.index' %}class="active"{% endif %}>
               <a href="{{ url_for('views.index') }}">Home</a>
             </li>
+            <li {% if request.endpoint == 'views.developers' %}class="active"{% endif %}>
+              <a href="{{ url_for('views.developers') }}">Developers</a>
+            </li>
             <li {% if request.endpoint == 'views.about' %}class="active"{% endif %}>
               <a href="{{ url_for('views.about') }}">About</a>
             </li>

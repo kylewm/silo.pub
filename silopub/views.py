@@ -13,6 +13,11 @@ def index():
     return render_template('index.jinja2')
 
 
+@views.route('/developers')
+def developers():
+    return render_template('developers.jinja2')
+
+
 @views.route('/about')
 def about():
     return render_template('about.jinja2')

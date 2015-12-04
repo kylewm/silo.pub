@@ -1,0 +1,108 @@
+{% extends "base.jinja2" %}
+{% block body %}
+  <div class="container">
+    <p class="lead">
+      This section describes how to use silo.pub programmatically,
+      including the expected and supported fields for each serivce.
+    </p>
+
+    <h2 id="micropub">Micropub</h2>
+    <p>
+      <a href="https://indiewebcamp.com/Micropub">Micropub</a> is an
+      open API standard that describes a protocol for publishing to a
+      personal website. The protocol includes OAuth2-style authorization,
+      using your website's URL as your ID.
+    </p>
+    <p>
+      silo.pub exposes a micropub endpoint so you can use this
+      protocol and vocabulary to publish to many different hosted
+      services like Blogger and Twitter. If you are
+      <a href="https://indiewebcamp.com/POSSE">POSSEing</a> to many
+      different services, silo.pub might save you the trouble of
+      writing special code for each unique API.
+    </p>
+
+    <h2 id="vocab">Vocabulary</h2>
+
+    <p>
+      A description of the parameters that each service supports. Many
+      properties can be multivalued by specifying
+      e.g. <code>in-reply-to[]</code> instead
+      of <code>in-reply-to</code>. Currently only single photos are
+      supported, and only as attached files. In the future we'll
+      support posting files by URL too.  Most properties are optional.
+    </p>
+
+    <h3 id="vocab-tumblr">Tumblr</h3>
+
+    <dl class="dl-horizontal">
+      <dt>slug</dt>
+      <dd>custom slug for your post</dd>
+
+      <dt>name</dt>
+      <dd>post title</dd>
+
+      <dt>content</dt>
+      <dd>body of the post</dd>
+
+      <dt>summary</dt>
+      <dd>if content is not provided, summary will be used as the body</dd>
+
+      <dt>in-reply-to</dt>
+      <dd>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</dd>
+
+      <dt>repost-of</dt>
+      <dd>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</dd>
+
+      <dt>like-of</dt>
+      <dd>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</dd>
+
+      <dt>bookmark-of</dt>
+      <dd>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</dd>
+
+      <dt>photo</dt>
+      <dd>(file) if provided, creates a "photo" post with a caption based on content (or name or summary)</dd>
+    </dl>
+
+    <h3 id="vocab-wordpress">Wordpress.com</h3>
+
+    <dl class="dl-horizontal">
+      <dt>slug</dt>
+      <dd>custom slug for your post</dd>
+
+      <dt>name</dt>
+      <dd>post title</dd>
+
+      <dt>summary</dt>
+      <dd>passed to Wordpress as the "excerpt"</dd>
+
+      <dt>content</dt>
+      <dd>body of the post</dd>
+
+      <dt>in-reply-to</dt>
+      <dd>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</dd>
+
+      <dt>repost-of</dt>
+      <dd>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</dd>
+
+      <dt>like-of</dt>
+      <dd>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</dd>
+
+      <dt>bookmark-of</dt>
+      <dd>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</dd>
+
+      <dt>photo</dt>
+      <dd>(file) uploads a single photo as an attachment using the property <code>media</code></dd>
+    </dl>
+
+    <h3 id="vocab-blogger">Blogger</h3>
+
+    <h3 id="vocab-twitter">Twitter</h3>
+
+    <h3 id="vocab-facebook">Facebook</h3>
+
+    <h3 id="vocab-flickr">Flickr</h3>
+
+  </div>
+
+{% endblock %}
