@@ -92,11 +92,14 @@ def callback():
 
 
 def get_authenticate_url(callback_uri, me=None, **kwargs):
-    oauth = OAuth1Session(
+    del session['oauth_token']
+    del session['oauth_token_secret']
+    oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
-    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
+    r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
+    session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
 
     base_url = AUTHENTICATE_URL
@@ -104,52 +107,67 @@ def get_authenticate_url(callback_uri, me=None, **kwargs):
         base_url += '?' + urllib.parse.urlencode({
             'screen_name': me.split('/')[-1],
         })
-    return oauth.authorization_url(base_url)
+    return oauth_session.authorization_url(base_url)
 
 
 def get_authorize_url(callback_uri):
-    oauth = OAuth1Session(
+    del session['oauth_token']
+    del session['oauth_token_secret']
+    oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
-    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
+    r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
+    session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth.authorization_url(AUTHORIZE_URL)
+    return oauth_session.authorization_url(AUTHORIZE_URL)
 
 
 def process_authenticate_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
-    request_token = request.args.get('oauth_token')
-    if not verifier or not request_token:
+    if not verifier:
         # user declined
         return {'error': 'Twitter authorization declined'}
 
+    request_token = session.get('oauth_token')
     request_token_secret = session.get('oauth_token_secret')
-    oauth = OAuth1Session(
+    oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         resource_owner_key=request_token,
         resource_owner_secret=request_token_secret)
-    oauth.parse_authorization_response(request.url)
+    oauth_session.parse_authorization_response(request.url)
     # get the access token and secret
-    r = oauth.fetch_access_token(ACCESS_TOKEN_URL)
-    token = r.get('oauth_token')
-    secret = r.get('oauth_token_secret')
+    r = oauth_session.fetch_access_token(ACCESS_TOKEN_URL)
+    access_token = r.get('oauth_token')
+    access_token_secret = r.get('oauth_token_secret')
 
-    user_info = oauth.get(VERIFY_CREDENTIALS_URL).json()
+    print('request token', request_token,
+          'request_token_secret', request_token_secret)
+    print('access token', access_token,
+          'access_token_secret', access_token_secret)
+
+    auth = OAuth1(
+        client_key=current_app.config['TWITTER_CLIENT_KEY'],
+        client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
+        resource_owner_key=access_token,
+        resource_owner_secret=access_token_secret)
+
+    user_info = requests.get(VERIFY_CREDENTIALS_URL, auth=auth).json()
 
     if 'errors' in user_info:
         return {'error': 'Error fetching credentials %r' % user_info.get('errors')}
-    
+
     user_id = user_info.get('id_str')
     username = user_info.get('screen_name')
 
-    current_app.logger.debug('verified credentials. user_id=%s, username=%s', user_id, username)
+    current_app.logger.debug('verified credentials. user_id=%s, username=%s',
+                             user_id, username)
     current_app.logger.debug('user_info: %r', user_info)
-    
+
     return {
-        'token': token,
-        'secret': secret,
+        'token': access_token,
+        'secret': access_token_secret,
         'user_id': user_id,
         'username': username,
         'user_info': user_info,
