@@ -137,9 +137,16 @@ def process_authenticate_callback(callback_uri):
     secret = r.get('oauth_token_secret')
 
     user_info = oauth.get(VERIFY_CREDENTIALS_URL).json()
+
+    if 'errors' in user_info:
+        return {'error': 'Error fetching credentials %r' % user_info.get('errors')}
+    
     user_id = user_info.get('id_str')
     username = user_info.get('screen_name')
 
+    current_app.logger.debug('verified credentials. user_id=%s, username=%s', user_id, username)
+    current_app.logger.debug('user_info: %r', user_info)
+    
     return {
         'token': token,
         'secret': secret,
