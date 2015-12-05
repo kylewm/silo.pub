@@ -90,7 +90,7 @@ def get_complex_content(data):
                            ('like-of', 'Liked'),
                            ('repost-of', 'Reposted'),
                            ('bookmark-of', 'Bookmarked')]:
-        for target in get_possible_array_value(prop):
+        for target in get_possible_array_value(data, prop):
             lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
                 headline, prop, target, prettify_url(target)))
 
