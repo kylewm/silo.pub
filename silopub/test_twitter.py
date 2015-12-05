@@ -41,7 +41,7 @@ class TestTwitter(SiloPubTestCase):
             auth_url = twitter.get_authenticate_url(
                 CALLBACK_URI, me='https://twitter.com/fakeuser')
             self.assertUrlsMatch(
-                'https://api.twitter.com/oauth/authenticate?screen_name=fakeuser&oauth_token=123',
+                'https://api.twitter.com/oauth/authenticate?force_login=true&screen_name=fakeuser&oauth_token=123',
                 auth_url)
             post.assert_called_once()
 
