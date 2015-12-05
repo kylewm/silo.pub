@@ -61,11 +61,11 @@ def callback():
     account.user_info = result['user_info']
     account.token = result['token']
 
-    account.sites = [Facebook(
+    account.update_sites([Facebook(
         url='https://www.facebook.com/{}'.format(account.user_id),
         # overloading "domain" to really mean "user's canonical url"
         domain='facebook.com/{}'.format(account.user_id),
-        site_id=account.user_id)]
+        site_id=account.user_id)])
 
     db.session.commit()
     flash('Authorized {}: {}'.format(account.username, ', '.join(

@@ -74,10 +74,10 @@ def callback():
         account.token = result['token']
         account.token_secret = result['secret']
 
-        account.sites = [Twitter(
+        account.update_sites([Twitter(
             url='https://twitter.com/{}'.format(account.username),
             domain='twitter.com/{}'.format(account.username),
-            site_id=account.user_id)]
+            site_id=account.user_id)])
 
         db.session.commit()
         flash('Authorized {}: {}'.format(account.username, ', '.join(
@@ -86,7 +86,7 @@ def callback():
                                 username=account.username))
 
     except:
-        current_app.logger.exception('During Tumblr authorization callback')
+        current_app.logger.exception('During Twitter authorization callback')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
 
@@ -102,12 +102,11 @@ def get_authenticate_url(callback_uri, me=None, **kwargs):
     session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
 
-    base_url = AUTHENTICATE_URL
+    params = {'force_login': 'true'}
     if me:
-        base_url += '?' + urllib.parse.urlencode({
-            'screen_name': me.split('/')[-1],
-        })
-    return oauth_session.authorization_url(base_url)
+        params['screen_name'] = me.split('/')[-1]
+    return oauth_session.authorization_url(
+        AUTHENTICATE_URL + '?' + urllib.parse.urlencode(params))
 
 
 def get_authorize_url(callback_uri):
@@ -117,7 +116,10 @@ def get_authorize_url(callback_uri):
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
-    r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
+
+    params = {'force_login': 'true',}
+    r = oauth_session.fetch_request_token(
+        REQUEST_TOKEN_URL + '?' + urllib.parse.urlencode(params))
     session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
     return oauth_session.authorization_url(AUTHORIZE_URL)

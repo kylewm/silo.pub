@@ -42,6 +42,13 @@ class Account(db.Model):
     created = db.Column(db.DateTime)
     expiry = db.Column(db.DateTime)
 
+    def update_sites(self, new_sites):
+        for old_site in self.sites:
+            for new_site in new_sites:
+                if old_site.url == new_site.url:
+                    new_site.silopub_tokens = old_site.silopub_tokens
+        self.sites = new_sites
+
     def __repr__(self):
         return 'Account[service={}, username={}]'.format(
             self.service, self.username)
@@ -63,8 +70,15 @@ class Site(db.Model):
     # the id used to query apis
     site_id = db.Column(db.String(256))
     site_info = db.Column(JsonType)
+    
+    # the connected service's OAuth access token and secret
     token = db.Column(db.String(512))
     token_secret = db.Column(db.String(512))
+
+    # micropub access tokens we've produced
+    silopub_tokens = db.relationship(
+        'Token', backref='site',
+        cascade='all, delete, delete-orphan')
 
     __mapper_args__ = {
         'polymorphic_on': service,
@@ -102,7 +116,6 @@ class Token(db.Model):
     issued_at = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime)
     site_id = db.Column(db.Integer, db.ForeignKey(Site.id))
-    site = db.relationship('Site')
     scope = db.Column(db.String)
     client_id = db.Column(db.String)
 

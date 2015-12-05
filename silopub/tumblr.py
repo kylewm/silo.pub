@@ -52,13 +52,14 @@ def callback():
         account.token = result['token']
         account.token_secret = result['secret']
 
-        account.sites = []
+        sites = []
         for blog in result['user_info'].get('blogs', []):
-            account.sites.append(Tumblr(
+            sites.append(Tumblr(
                 url=blog.get('url'),
                 domain=util.domain_for_url(blog.get('url')),
                 site_id=blog.get('name'),
                 site_info=blog))
+        account.update_sites(sites)
 
         db.session.commit()
         flash('Authorized {}: {}'.format(account.username, ', '.join(

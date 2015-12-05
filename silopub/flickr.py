@@ -77,10 +77,10 @@ def callback():
         account.token = result['token']
         account.token_secret = result['secret']
 
-        account.sites = [Flickr(
+        account.update_sites([Flickr(
             url='https://flickr.com/{}'.format(account.user_id),
             domain='flickr.com/{}'.format(account.user_id),
-            site_id=account.user_id)]
+            site_id=account.user_id)])
 
         db.session.commit()
         flash('Authorized {}: {}'.format(account.username, ', '.join(

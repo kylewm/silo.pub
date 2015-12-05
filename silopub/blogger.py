@@ -63,13 +63,14 @@ def callback():
     blogs = payload.get('items', [])
 
     # find or create the sites
-    account.sites = []
+    sites = []
     for blog in blogs:
-        account.sites.append(Blogger(
+        sites.append(Blogger(
             url=blog.get('url'),
             domain=util.domain_for_url(blog.get('url')),
             site_id=blog.get('id'),
             site_info=blog))
+    account.update_sites(sites)
 
     db.session.commit()
     flash('Authorized {}: {}'.format(account.username, ', '.join(

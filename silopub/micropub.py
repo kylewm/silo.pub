@@ -201,7 +201,7 @@ def token_endpoint():
 
     return util.urlenc_response({
         'access_token': token.token,
-        'me': site.url,
+        'me': me,
         'scope': scope,
     })
 
@@ -238,7 +238,10 @@ def micropub_endpoint():
 
     # old JWT tokens (TODO how do I get rid of these??)
     else:
-        token_data = util.jwt_decode(token)
+        try:
+            token_data = util.jwt_decode(token)
+        except:
+            current_app.logger.debug('could not find or decode token: %s', token)
 
         if not token_data:
             err_msg = 'Unrecognized token: {}' .format(token)
