@@ -117,12 +117,12 @@ def get_authorize_url(callback_uri):
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
 
-    params = {'force_login': 'true',}
-    r = oauth_session.fetch_request_token(
-        REQUEST_TOKEN_URL + '?' + urllib.parse.urlencode(params))
+    r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
     session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth_session.authorization_url(AUTHORIZE_URL)
+    params = {'force_login': 'true'}
+    return oauth_session.authorization_url(
+        AUTHORIZE_URL + '?' + urllib.parse.urlencode(params))
 
 
 def process_authenticate_callback(callback_uri):

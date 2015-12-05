@@ -29,7 +29,7 @@ class TestTwitter(SiloPubTestCase):
                 'oauth_token=123&oauth_token_secret=456')
             auth_url = twitter.get_authorize_url(CALLBACK_URI)
             self.assertUrlsMatch(
-                'https://api.twitter.com/oauth/authorize?oauth_token=123',
+                'https://api.twitter.com/oauth/authorize?force_login=true&oauth_token=123',
                 auth_url)
             post.assert_called_once_with(twitter.REQUEST_TOKEN_URL)
 
