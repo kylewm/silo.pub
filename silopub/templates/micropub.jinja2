@@ -41,9 +41,14 @@
   {% endif %}
 
   <p>
-    When you're all set, <a href="https://quill.p3k.io">Quill</a> is a
-    great micropub client for posting simple notes.
+    When you're ready, <a href="https://quill.p3k.io">Quill</a> is a
+    great micropub client for posting notes and articles.
+    {% if access_token %}
+      Alternatively, you can use this access token to post to the Micropub endpoint directly (e.g. via curl)
+      <pre>{{ access_token }}</pre>
+    {% endif %}
   </p>
+
 
 </div>
 

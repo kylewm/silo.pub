@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort, redirect, url_for, flash
 from flask import request
-from silopub.models import Account, Site
+from silopub.models import Account, Site, Token
+from silopub import util
 import requests
 from bs4 import BeautifulSoup
 
@@ -105,8 +106,12 @@ def setup_micropub():
             upub_endpt = next(
                 (a.get('href') for a in upub if a.get('href')), None)
 
+    token = None
+    if util.is_authed(site):
+        token = Token.create_or_update(site, 'post', 'https://silo.pub/')
+
     return render_template(
         ['micropub_{}.jinja2'.format(site.service), 'micropub.jinja2'],
         site=site, authorization_endpoint=auth_endpt,
         token_endpoint=token_endpt,
-        micropub=upub_endpt)
+        micropub=upub_endpt, access_token=token and token.token)

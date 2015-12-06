@@ -2,7 +2,9 @@ from silopub.ext import db
 from sqlalchemy import func
 import json
 import urllib.parse
-
+import datetime
+import binascii
+import os
 
 class JsonType(db.TypeDecorator):
     """Represents an immutable structure as a json-encoded string.
@@ -118,6 +120,23 @@ class Token(db.Model):
     site_id = db.Column(db.Integer, db.ForeignKey(Site.id))
     scope = db.Column(db.String)
     client_id = db.Column(db.String)
+
+    @classmethod
+    def create_or_update(cls, site, scope, client_id):
+        # look for existing token
+        now = datetime.datetime.utcnow()
+        token = cls.query.filter_by(
+            site=site, scope=scope, client_id=client_id).first()
+        if token:
+            token.updated_at = now
+        else:
+            token = cls(token=binascii.hexlify(os.urandom(16)).decode(),
+                        site=site, scope=scope, client_id=client_id,
+                        issued_at=now, updated_at=now)
+            db.session.add(token)
+
+        db.session.commit()
+        return token
 
     def __repr__(self):
         return 'Token[{}]'.format(self.token)

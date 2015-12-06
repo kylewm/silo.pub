@@ -3,7 +3,7 @@ import random
 import re
 import urllib.parse
 
-from flask import flash, current_app, make_response, url_for, jsonify
+from flask import flash, current_app, make_response, url_for, jsonify, session
 from requests.exceptions import HTTPError, SSLError
 import jwt
 import mf2py
@@ -82,6 +82,18 @@ def generate_access_token(me, site_id, client_id, scope):
     return token
 
 
+def set_authed(sites):
+    session['authed-sites'] = [s.id for s in sites]
+
+
+def is_authed(site):
+    return site.id in session.get('authed-sites', [])
+
+
+def clear_authed(site):
+    session.pop('authed-sites', None)
+
+
 def get_complex_content(data):
     """Augment content with content from additional fields like
     in-reply-to"""
@@ -94,7 +106,8 @@ def get_complex_content(data):
             lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
                 headline, prop, target, prettify_url(target)))
 
-    content = data.get('content') or data.get('summary')
+    content = (data.get('content[html]') or data.get('content')
+               or data.get('summary'))
     if content:
         lines.append(content)
 

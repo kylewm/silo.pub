@@ -89,7 +89,7 @@ def get_authorize_url(redirect_uri):
         'redirect_uri': redirect_uri,
         'scope': BLOGGER_SCOPE,
         'state': csrf_token,
-        'access_type': 'offline', # necessary to get refresh token
+        'access_type': 'offline',  # necessary to get refresh token
         'approval_prompt': 'force',
     })
 
@@ -140,7 +140,9 @@ def process_authenticate_callback(redirect_uri):
     else:
         expiry = None
 
-    current_app.logger.info('Got Blogger access token: %s. expiry: %s. refresh token: %s', access_token, expiry, refresh_token)
+    current_app.logger.info(
+        'Got Blogger access token: %s. expiry: %s. refresh token: %s',
+        access_token, expiry, refresh_token)
 
     r = requests.get(API_SELF_URL, headers={
         'Authorization': 'Bearer ' + access_token,
@@ -174,7 +176,8 @@ def process_authenticate_callback(redirect_uri):
 def maybe_refresh_access_token(account):
     if (account.refresh_token and account.expiry
             and account.expiry <= datetime.datetime.utcnow()):
-        current_app.logger.info('refreshing access token for %s', account.username)
+        current_app.logger.info(
+            'refreshing access token for %s', account.username)
 
         r = requests.post(API_TOKEN_URL, data={
             'refresh_token': account.refresh_token,
@@ -184,17 +187,20 @@ def maybe_refresh_access_token(account):
         })
 
         if r.status_code // 100 != 2:
-            current_app.logger.warn('Failed to refresh access token %s', r.text)
+            current_app.logger.warn(
+                'Failed to refresh access token %s', r.text)
             return False
 
         payload = r.json()
         access_token = payload.get('access_token')
         expires_in = payload.get('expires_in')
 
-        current_app.logger.info('refreshed acccess token: %s. expires in: %d', access_token, int(expires_in))
+        current_app.logger.info('refreshed acccess token: %s. expires in: %d',
+                                access_token, int(expires_in))
 
         account.token = access_token
-        account.expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=int(expires_in))
+        account.expiry = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=int(expires_in))
         db.session.commit()
 
     return True

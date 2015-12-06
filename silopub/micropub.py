@@ -184,21 +184,7 @@ def token_endpoint():
         return util.urlenc_response(
             {'error', 'No site for authorization code!'}, 400)
 
-    # look for existing token
-    now = datetime.datetime.utcnow()
-    token = Token.query.filter_by(site=site, scope=scope,
-                                  client_id=client_id).first()
-
-    if token:
-        token.updated_at = now
-    else:
-        token = Token(token=binascii.hexlify(os.urandom(16)).decode(),
-                      site=site, scope=scope, client_id=client_id,
-                      issued_at=now, updated_at=now)
-        db.session.add(token)
-
-    db.session.commit()
-
+    token = Token.create_or_udpate(site, scope, client_id)
     return util.urlenc_response({
         'access_token': token.token,
         'me': me,

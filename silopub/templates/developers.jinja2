@@ -22,10 +22,26 @@
       writing special code for each unique API.
     </p>
 
+    <h2 id="post">Creating a Post</h2>
+
+    <p>
+      After obtaining an access token, create a new entry on a service by
+      sending a POST request to silo.pub's Micropub endpoint
+      (<code>{{url_for('micropub.micropub_endpoint', _external=True)}}</code>)
+      with a x-www-form-urlencoded string (or multipart/form-data if attaching
+      media). All requests must include the access token either as a form field:
+    </p>
+    <pre>access_token=xxxxxxxxx</pre>
+    <p>
+      or an Authorization header
+    </p>
+    <pre>Authorization: Bearer xxxxxxxxx</pre>.
+
     <h2 id="vocab">Vocabulary</h2>
 
     <p>
-      A description of the parameters that each service supports. Many
+      A description of the parameters that each service supports. Most
+      posts will include at least a <code>content</code>. Many
       properties can be multivalued by specifying
       e.g. <code>in-reply-to[]</code> instead
       of <code>in-reply-to</code>. Currently only single photos are
@@ -35,73 +51,230 @@
 
     <h3 id="vocab-tumblr">Tumblr</h3>
 
-    <dl class="dl-horizontal">
-      <dt>slug</dt>
-      <dd>custom slug for your post</dd>
+    <table class="table table-striped">
+      <tr>
+        <td>slug</td>
+        <td>optional custom slug for your post</td>
+      </tr>
 
-      <dt>name</dt>
-      <dd>post title</dd>
+      <tr>
+        <td>name</td>
+        <td>post title</td>
+      </tr>
 
-      <dt>content</dt>
-      <dd>body of the post</dd>
+      <tr>
+        <td>content[html] or content</td>
+        <td>body of the post</td>
+      </tr>
 
-      <dt>summary</dt>
-      <dd>if content is not provided, summary will be used as the body</dd>
+      <tr>
+        <td>summary</td>
+        <td>if content is not provided, summary will be used as the body</td>
+      </tr>
 
-      <dt>in-reply-to</dt>
-      <dd>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</dd>
+      <tr>
+        <td>in-reply-to</td>
+        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+      </tr>
 
-      <dt>repost-of</dt>
-      <dd>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</dd>
+      <tr>
+        <td>repost-of</td>
+        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</td>
+      </tr>
 
-      <dt>like-of</dt>
-      <dd>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</dd>
+      <tr>
+        <td>like-of</td>
+        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+      </tr>
 
-      <dt>bookmark-of</dt>
-      <dd>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</dd>
+      <tr>
+        <td>bookmark-of</td>
+        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+      </tr>
 
-      <dt>photo</dt>
-      <dd>(file) if provided, creates a "photo" post with a caption based on content (or name or summary)</dd>
-    </dl>
+      <tr>
+        <td>photo</td>
+        <td>(file) if provided, creates a "photo" post with a caption based on content (or name or summary)</td>
+      </tr>
+
+    </table>
 
     <h3 id="vocab-wordpress">Wordpress.com</h3>
 
-    <dl class="dl-horizontal">
-      <dt>slug</dt>
-      <dd>custom slug for your post</dd>
+    <table class="table table-striped">
+      <tr>
+        <td>slug</td>
+        <td>optional custom slug for your post</td>
+      </tr>
+      <tr>
+        <td>name</td>
+        <td>post title</td>
+      </tr>
+      <tr>
+        <td>summary</td>
+        <td>passed to Wordpress as the "excerpt"</td>
+      </tr>
+      <tr>
+        <td>content[html] or content</td>
+        <td>body of the post</td>
+      </tr>
+      <tr>
+        <td>in-reply-to</td>
+        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+      </tr>
+      <tr>
+        <td>repost-of</td>
+        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of"</td>
+      </tr>
+      <tr>
+        <td>like-of</td>
+        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+      </tr>
+      <tr>
+        <td>bookmark-of</td>
+        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+      </tr>
+      <tr>
+        <td>photo</td>
+        <td>(file) uploads a single photo as an attachment using the Wordpress property <code>media</code></td>
+      </tr>
 
-      <dt>name</dt>
-      <dd>post title</dd>
-
-      <dt>summary</dt>
-      <dd>passed to Wordpress as the "excerpt"</dd>
-
-      <dt>content</dt>
-      <dd>body of the post</dd>
-
-      <dt>in-reply-to</dt>
-      <dd>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</dd>
-
-      <dt>repost-of</dt>
-      <dd>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</dd>
-
-      <dt>like-of</dt>
-      <dd>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</dd>
-
-      <dt>bookmark-of</dt>
-      <dd>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</dd>
-
-      <dt>photo</dt>
-      <dd>(file) uploads a single photo as an attachment using the property <code>media</code></dd>
-    </dl>
+    </table>
 
     <h3 id="vocab-blogger">Blogger</h3>
 
+    <table class="table table-striped">
+      <tr>
+        <td>name</td>
+        <td>post title</td>
+      </tr>
+      <tr>
+        <td>content[html] or content</td>
+        <td>body of the post</td>
+      </tr>
+      <tr>
+        <td>in-reply-to</td>
+        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+      </tr>
+      <tr>
+        <td>repost-of</td>
+        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of"</td>
+      </tr>
+      <tr>
+        <td>like-of</td>
+        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+      </tr>
+      <tr>
+        <td>bookmark-of</td>
+        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+      </tr>
+    </table>
+
     <h3 id="vocab-twitter">Twitter</h3>
+
+    <table class="table table-striped">
+      <tr>
+        <td>url</td>
+        <td>Permalink of the original post, useful for syndicating to
+        Twitter. If the content must be truncated to fit in a tweet,
+        this link will be appended. Otherwise, it is ignored.</td>
+      </tr>
+      <tr>
+        <td>content[value] or content</td>
+        <td>text of the note. If this is longer than 140 characters
+        (assuming t.co wrapping), silo.pub will automatically truncate
+        the content and include <code>url</code> (if provided)</td>
+      </tr>
+      <tr>
+        <td>in-reply-to</td>
+        <td>URL of a tweet to reply to. If the repliee is not the
+        currently authorized user, and the post content does not
+        include the @-name of the repliee, it will automatically be
+        prepended to the string (otherwise Twitter does ot really
+        recognized it as a reply)</td>
+      </tr>
+      <tr>
+        <td>repost-of</td>
+        <td>URL of a tweet to retweet. If specified, all other fields are ignored.</td>
+      </tr>
+      <tr>
+        <td>like-of</td>
+        <td>URL of a tweet to like. If specified, all other fields are ignored.</td>
+      </tr>
+      <tr>
+        <td>location</td>
+        <td>A Geo URI specifying latitude and longitude,
+        e.g. <code>geo:37.7458887,-119.5333317</code>. (additional
+        properties of the URI are ignored).</td>
+      </tr>
+      <tr>
+        <td>photo</td>
+        <td>(file) If provided, attach a single photo to the
+        tweet. Note that this reduces the number of allowed characters
+        in the post content.</td>
+      </tr>
+    </table>
 
     <h3 id="vocab-facebook">Facebook</h3>
 
+    <div class="alert alert-warning">
+      Unfortunately, Facebook's
+      API <a href="http://stackoverflow.com/questions/28337331/facebook-graph-api-find-graph-object-from-post-url">makes
+      it prohibitively difficult</a> to find the Graph ID of a post
+      from its URL, so replying to, sharing, and liking Facebook posts
+      are not supported by silo.pub. I'm open to any ideas for
+      workarounds.
+    </div>
+
+    <table class="table table-striped">
+      <tr>
+        <td>name</td>
+        <td>title of an article. If name and content are provided,
+        then silo.pub will post the full text. Note that "name" and
+        "photo" are mutually exclusive (because articles are not
+        photos) &mdash; If "name" is specified, then "photo" is ignored.</td>
+      </tr>
+      <tr>
+        <td>content[value] or content</td>
+        <td>text of the post. For note posts, silo.pub grabs the first
+        link from the post content (if there are any) and uses it as
+        the link preview.</td>
+      </tr>
+      <tr>
+        <td>url</td>
+        <td>Permalink of the original post, useful when syndicating to
+        Facebook. If this looks like an "article" (i.e. it has an
+        explicit "name") then the permalink will be included as a link
+        preview. If this looks more like a "note", then it will be
+        included in parentheses in the body of the status update.</td>
+      </tr>
+      <tr>
+        <td>photo</td>
+        <td>(file) If provided, post a photo, with content as the "caption".</td>
+      </tr>
+    </table>
+
     <h3 id="vocab-flickr">Flickr</h3>
+
+    <table class="table table-striped">
+      <tr>
+        <td>name</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>content[value] or content</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>url</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>photo</td>
+        <td></td>
+      </tr>
+    </table>
+
 
   </div>
 
