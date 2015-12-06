@@ -172,6 +172,8 @@
 
     <h3 id="vocab-twitter">Twitter</h3>
 
+    <h4>Tweet</h4>
+
     <table class="table table-striped">
       <tr>
         <td>url</td>
@@ -194,14 +196,6 @@
         recognized it as a reply)</td>
       </tr>
       <tr>
-        <td>repost-of</td>
-        <td>URL of a tweet to retweet. If specified, all other fields are ignored.</td>
-      </tr>
-      <tr>
-        <td>like-of</td>
-        <td>URL of a tweet to like. If specified, all other fields are ignored.</td>
-      </tr>
-      <tr>
         <td>location</td>
         <td>A Geo URI specifying latitude and longitude,
         e.g. <code>geo:37.7458887,-119.5333317</code>. (additional
@@ -212,6 +206,24 @@
         <td>(file) If provided, attach a single photo to the
         tweet. Note that this reduces the number of allowed characters
         in the post content.</td>
+      </tr>
+    </table>
+
+    <h4>Retweet</h4>
+
+    <table class="table table-striped">
+      <tr>
+        <td>repost-of</td>
+        <td>URL of a tweet to retweet. If specified, all other fields are ignored.</td>
+      </tr>
+    </table>
+
+    <h4>Like</h4>
+
+    <table class="table table-striped">
+      <tr>
+        <td>like-of</td>
+        <td>URL of a tweet to like. If specified, all other fields are ignored.</td>
       </tr>
     </table>
 
@@ -256,24 +268,54 @@
 
     <h3 id="vocab-flickr">Flickr</h3>
 
+    <h4>Photo</h4>
+
     <table class="table table-striped">
       <tr>
         <td>name</td>
-        <td></td>
+        <td>Photo title</td>
       </tr>
       <tr>
         <td>content[value] or content</td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>url</td>
-        <td></td>
+        <td>Photo description (optional)</td>
       </tr>
       <tr>
         <td>photo</td>
-        <td></td>
+        <td>(file) required. This is the photo to upload to Flickr.</td>
+      </tr>
+      <tr>
+        <td>category</td>
+        <td>One or more tags to apply to the photo. If a category is
+        the URL to a user's profile or photostream, then this will be
+        converted to a <a href="https://indiewebcamp.com/person-tag">person tag</a>
+        instead of a regular tag. To specify multiple categories,
+        remember to use the array syntax, <code>category[]=</code>.</td>
+    </table>
+
+    <h4>Comment</h4>
+
+    <table class="table table-striped">
+      <tr>
+        <td>content[value] or content</td>
+        <td>Text of the comment</td>
+      </tr>
+      <tr>
+        <td>in-reply-to</td>
+        <td>URL of the photo on which to comment.</td>
       </tr>
     </table>
+
+    <h4>Favorite</h4>
+
+    <table class="table table-striped">
+      <tr>
+        <td>like-of</td>
+        <td>URL of the photo to favorite.</td>
+      </tr>
+    </table>
+
+    Note: The Location header of the response will be the URL of the
+    photo itself, since faves don't have their own URL.
 
 
   </div>
