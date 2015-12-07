@@ -210,3 +210,11 @@ def get_possible_array_value(args, key):
     if key in args:
         return [args.get(key)]
     return args.getlist(key + '[]')
+
+
+def parse_geo_uri(uri):
+    if uri and uri.startswith('geo:'):
+        latlong = uri[4:].split(';')[0].split(',', 1)
+        if len(latlong) == 2:
+            return latlong
+    return None, None

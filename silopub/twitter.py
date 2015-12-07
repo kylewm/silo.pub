@@ -241,10 +241,7 @@ def publish(site):
 
     location = request.form.get('location')
     current_app.logger.debug('received location param: %s', location)
-    if location and location.startswith('geo:'):
-        latlong = location[4:].split(';')[0].split(',', 1)
-        if len(latlong) == 2:
-            data['lat'], data['long'] = latlong
+    data['lat'], data['long'] = util.parse_geo_uri(location)
 
     target_length = 140
     permalink_url = request.form.get('url')
@@ -262,4 +259,5 @@ def publish(site):
                           files={'media[]': photo_file}, auth=auth))
 
     return interpret_response(
-        requests.post(CREATE_STATUS_URL, data=data, auth=auth))
+        requests.post(CREATE_STATUS_URL, data=util.trim_nulls(data),
+                      auth=auth))

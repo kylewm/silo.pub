@@ -165,6 +165,8 @@ def publish(site):
     content = request.form.get('content[value]') or request.form.get('content')
     permalink = request.form.get('url')
     photo_file = request.files.get('photo')
+    location = request.form.get('location')
+    place_name = request.form.get('place-name') or request.form.get('place_name')
 
     post_data = {'access_token': site.account.token}
     post_files = None
@@ -195,6 +197,34 @@ def publish(site):
             linktok = next((tok for tok in tokens if tok.tag == 'link'), None)
             if linktok:
                 post_data['link'] = linktok.content
+
+    lat, lng = util.parse_geo_uri(location)
+    if lat and lng:
+        current_app.logger.debug(
+            'Search FB for a place, %s at %s, %s', place_name, lat, lng)
+        r = requests.get(
+            'https://graph.facebook.com/v2.5/search', params=util.trim_nulls({
+                'type': 'place',
+                'center': '%s,%s' % (lat, lng),
+                'distance': '500',
+                'q': place_name,
+                'access_token': site.account.token,
+            }))
+        if r.status_code != 200:
+            current_app.logger.warning(
+                'FB place search failed with response %r: %r', r, r.text)
+        else:
+            places = r.json().get('data', [])
+            if not places:
+                # TODO consider searching without a place name?
+                current_app.logger.warning(
+                    'FB place search found no resuts for place %s at %s, %s ',
+                    place_name, lat, lng)
+            else:
+                current_app.logger.debug(
+                    'Found a FB place: %s (%s)', places[0].get('name'),
+                    places[0].get('id'))
+                post_data['place'] = places[0].get('id')
 
     current_app.logger.debug(
         'Publishing to facebook %s: %s', api_endpoint, post_data)
