@@ -37,16 +37,15 @@
     </p>
     <pre>Authorization: Bearer xxxxxxxxx</pre>.
 
-    <h2 id="vocab">Vocabulary</h2>
-
     <p>
-      A description of the parameters that each service supports. Most
-      posts will include at least a <code>content</code>. Many
-      properties can be multivalued by specifying
-      e.g. <code>in-reply-to[]</code> instead
-      of <code>in-reply-to</code>. Currently only single photos are
-      supported, and only as attached files. In the future we'll
-      support posting files by URL too.  Most properties are optional.
+      The following sections list the parameters that each service
+      supports. Most posts will include at least
+      a <code>content</code>. Many properties can be multivalued by
+      specifying e.g. <code>category[]</code> instead
+      of <code>category</code> (note that multi-valued properties must
+      use the array syntax). Currently only single photos are
+      supported, and only as uploaded files. In the future we'll
+      support posting photos by URL too. Most properties are optional.
     </p>
 
     <h3 id="vocab-tumblr">Tumblr</h3>
@@ -74,27 +73,36 @@
 
       <tr>
         <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+        <td>a URL to reply to. This will embed custom microformatted
+        html in the body of your post with class="u-in-reply-to"</td>
       </tr>
 
       <tr>
         <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of". A planned future version will support native Tumblr reblogging</td>
+        <td>at this time, this just embeds a custom microformatted
+        html link in the body of your post with class="repost-of". A
+        planned future version will support native Tumblr
+        reblogging</td>
       </tr>
 
       <tr>
         <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+        <td>a URL to post an indie like of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-like-of"</td>
       </tr>
 
       <tr>
         <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+        <td>a URL to post an indie bookmark of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-bookmark-of"</td>
       </tr>
 
       <tr>
         <td>photo</td>
-        <td>(file) if provided, creates a "photo" post with a caption based on content (or name or summary)</td>
+        <td>(file) if provided, creates a "photo" post with a caption
+        based on content (or name or summary)</td>
       </tr>
 
     </table>
@@ -120,23 +128,30 @@
       </tr>
       <tr>
         <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+        <td>a URL to reply to. This will embed custom microformatted
+        html in the body of your post with class="u-in-reply-to"</td>
       </tr>
       <tr>
         <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of"</td>
+        <td>at this time, this just embeds a custom microformatted
+        html link in the body of your post with class="repost-of"</td>
       </tr>
       <tr>
         <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+        <td>a URL to post an indie like of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-like-of"</td>
       </tr>
       <tr>
         <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+        <td>a URL to post an indie bookmark of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-bookmark-of"</td>
       </tr>
       <tr>
         <td>photo</td>
-        <td>(file) uploads a single photo as an attachment using the Wordpress property <code>media</code></td>
+        <td>(file) uploads a single photo as an attachment using the
+        Wordpress property <code>media</code></td>
       </tr>
 
     </table>
@@ -154,19 +169,25 @@
       </tr>
       <tr>
         <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted html in the body of your post with class="u-in-reply-to"</td>
+        <td>a URL to reply to. This will embed custom microformatted
+        html in the body of your post with class="u-in-reply-to"</td>
       </tr>
       <tr>
         <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted html link in the body of your post with class="repost-of"</td>
+        <td>at this time, this just embeds a custom microformatted
+        html link in the body of your post with class="repost-of"</td>
       </tr>
       <tr>
         <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom microformatted html in the body of your post with class="u-like-of"</td>
+        <td>a URL to post an indie like of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-like-of"</td>
       </tr>
       <tr>
         <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom microformatted html in the body of your post with class="u-bookmark-of"</td>
+        <td>a URL to post an indie bookmark of. This will embed custom
+        microformatted html in the body of your post with
+        class="u-bookmark-of"</td>
       </tr>
     </table>
 
