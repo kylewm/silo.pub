@@ -261,6 +261,21 @@
         included in parentheses in the body of the status update.</td>
       </tr>
       <tr>
+        <td>location</td>
+        <td>Either a numeric Facebook place ID or a Geo URI expressing
+        latitude and longitude. If provided we'll try to find Facebook
+        places near this point. If silo.pub fails to find a place in
+        the Facebook database, publishing will proceed normally,
+        without a place.</td>
+      </tr>
+      <tr>
+        <td>place-name</td>
+        <td>Use this name to narrow down the search for a Facebook
+        place. It doesn't have to be an exact match for the name in
+        the Facebook database, but an overly specific name might
+        prevent the API from finding anything.</td>
+      </tr>
+      <tr>
         <td>photo</td>
         <td>(file) If provided, post a photo, with content as the "caption".</td>
       </tr>

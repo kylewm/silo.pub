@@ -3,3 +3,4 @@ db.sqlite
 venv/
 feverdream.cfg
 silopub.cfg
+silopub-dev.ini
