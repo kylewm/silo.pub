@@ -263,10 +263,10 @@
       <tr>
         <td>location</td>
         <td>Either a numeric Facebook place ID or a Geo URI expressing
-        latitude and longitude. If provided we'll try to find Facebook
-        places near this point. If silo.pub fails to find a place in
-        the Facebook database, publishing will proceed normally,
-        without a place.</td>
+        latitude and longitude. Given a lat/long, we'll searh Facebook
+        for places near this point. If we fails to find a match in the
+        Facebook database, publishing will proceed normally, without a
+        place.</td>
       </tr>
       <tr>
         <td>place-name</td>
@@ -301,10 +301,18 @@
       <tr>
         <td>category</td>
         <td>One or more tags to apply to the photo. If a category is
-        the URL to a user's profile or photostream, then this will be
-        converted to a <a href="https://indiewebcamp.com/person-tag">person tag</a>
-        instead of a regular tag. To specify multiple categories,
-        remember to use the array syntax, <code>category[]=</code>.</td>
+          the URL to a user's profile or photostream, then this will
+          be converted to
+          a <a href="https://indiewebcamp.com/person-tag">person
+          tag</a> instead of a regular tag. To specify multiple
+          categories, remember to use the array
+          syntax, <code>category[]=</code>.
+        </td>
+      </tr>
+      <tr>
+        <td>location</td>
+        <td>a Geo URI specifying the latitude and longitude where the
+        photo was taken, e.g. <code>geo:39.3085532,-123.8105919</code>.</td>
     </table>
 
     <h4>Comment</h4>

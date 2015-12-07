@@ -316,6 +316,16 @@ def publish(site):
         }, site=site)
         current_app.logger.debug('Tagged person: %r, %s', resp, resp.text)
 
+    lat, lng = util.parse_geo_uri(request.form.get('location'))
+    if lat and lng:
+        current_app.logger.debug('setting location: %s, %s', lat, lng)
+        resp = call_api_method('POST', 'flickr.photos.geo.setLocation', {
+            'photo_id': photo_id,
+            'lat': lat,
+            'lon': lng,
+        }, site=site)
+        current_app.logger.debug('set location: %r, %s', resp, resp.text)
+
     return util.make_publish_success_response(
         'https://www.flickr.com/photos/{}/{}/'.format(
             site.account.user_info.get('person', {}).get('path_alias')
