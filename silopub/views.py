@@ -114,4 +114,5 @@ def setup_micropub():
         ['micropub_{}.jinja2'.format(site.service), 'micropub.jinja2'],
         site=site, authorization_endpoint=auth_endpt,
         token_endpoint=token_endpt,
-        micropub=upub_endpt, access_token=token and token.token)
+        micropub=upub_endpt, access_token=token and token.token,
+        authed=util.is_authed(site))

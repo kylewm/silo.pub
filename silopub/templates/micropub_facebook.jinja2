@@ -1,6 +1,7 @@
 {% extends "micropub.jinja2" %}
 
 {% block instructions %}
+
   <p>
     Now just use this URL when signing in to Micropub clients:
   </p>
@@ -10,5 +11,33 @@
   <p>
     Click <a href="{{ url_for('views.about') }}#proxy">for info about proxy URLs</a>.
   </p>
+
+{% endblock %}
+
+{% block extra_settings %}
+
+  <h2>Extra Settings</h2>
+
+  {% if authed %}
+
+    <p>
+      For privacy reasons, Facebook makes it difficult for apps to
+      guess a post's URL (even posts created by that app). If
+      you've set a <a href="https://www.facebook.com/username">custom
+      username</a> on your Facebook account, you can enter the
+      username here to generate nicer URLs in the Micropub Location
+      response header.
+    </p>
+
+    <form class="form-inline" method="POST" action="{{ url_for('facebook.custom_username') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="site" value="{{ site.id }}" />
+      <input type="hidden" name="next" value="{{ request.url }}" />
+      <label for="username">Custom Username</label>
+      <input class="form-control" type="text" name="username" id="username" value="{{ site.account.username }}" />
+      <button type="submit" class="btn btn-default">Save</button>
+    </form>
+
+  {% endif %}
 
 {% endblock %}

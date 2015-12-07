@@ -4,7 +4,7 @@ from flask.ext.wtf.csrf import generate_csrf, validate_csrf
 from silopub import micropub
 from silopub import util
 from silopub.ext import db
-from silopub.models import Account, Facebook
+from silopub.models import Account, Site, Facebook
 from urllib.parse import urlencode, parse_qs
 import brevity
 import html
@@ -54,10 +54,10 @@ def callback():
         service='facebook', user_id=result['user_id']).first()
 
     if not account:
-        account = Account(service='facebook', user_id=result['user_id'])
+        account = Account(service='facebook', user_id=result['user_id'],
+                          username=result['user_id'])
         db.session.add(account)
 
-    account.username = result['username']
     account.user_info = result['user_info']
     account.token = result['token']
 
@@ -146,6 +146,20 @@ def process_authenticate_callback(callback_uri):
     }
 
 
+@facebook.route('/facebook/username', methods=['POST'])
+def custom_username():
+    next_url = request.form.get('next')
+    site_id = request.form.get('site')
+    site = Facebook.query.get(site_id)
+    if not site or not util.is_authed(site):
+        flash('Please authenticate with this service', 'warning')
+    else:
+        site.account.username = request.form.get('username')
+        db.session.commit()
+        flash('Updated username to ' + site.account.username)
+    return redirect(next_url)
+
+
 def publish(site):
     title = request.form.get('name')
     content = request.form.get('content[value]') or request.form.get('content')
@@ -203,9 +217,15 @@ def publish(site):
         return util.wrap_silo_error_response(r)
 
     resp_data = r.json()
-    fbid = resp_data.get('post_id') or resp_data.get('id')
+    fbid = resp_data.get('id') or resp_data.get('post_id')
+
+    split = fbid.split('_')
+    if len(split) == 2:
+        fbid = split[1]
+
     return util.make_publish_success_response(
-        'https://www.facebook.com/{}'.format(fbid),
+        'https://www.facebook.com/{}/posts/{}'.format(
+            site.account.username, fbid),
         data=resp_data)
 
 
