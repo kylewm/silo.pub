@@ -43,9 +43,9 @@
       a <code>content</code>. Many properties can be multivalued by
       specifying e.g. <code>category[]</code> instead
       of <code>category</code> (note that multi-valued properties must
-      use the array syntax). Currently only single photos are
-      supported, and only as uploaded files. In the future we'll
-      support posting photos by URL too. Most properties are optional.
+      use the array syntax). Currently only photos and video must be
+      uploaded as files. In the future we'll support posting media by
+      URL too. Most properties are optional.
     </p>
 
     <h3 id="vocab-tumblr">Tumblr</h3>
@@ -224,9 +224,18 @@
       </tr>
       <tr>
         <td>photo</td>
-        <td>(file) If provided, attach a single photo to the
-        tweet. Note that this reduces the number of allowed characters
+        <td>(file) Attach a photo to the tweet. Up to 4 photos can be
+        attached using the array syntax
+        (<code>photo[]</code>). Twitter documentation says images can
+        be up to 5MB, but it seems to complain about anything over
+        3MB. Note that this reduces the number of allowed characters
         in the post content.</td>
+      </tr>
+      <tr>
+        <td>video</td>
+        <td>(file) Attach a single video to the tweet. The video must
+        be in MP4 format and can be up to 15MB. Note that this reduces the
+        number of allowed characters in the post content.</td>
       </tr>
     </table>
 

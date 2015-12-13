@@ -1,8 +1,11 @@
 import html
+import itertools
+import json
+import os
+import re
 import requests
 import sys
-import json
-import re
+import tempfile
 import urllib.parse
 
 from flask import Blueprint, current_app, redirect, url_for, request, flash
@@ -20,9 +23,12 @@ AUTHORIZE_URL = 'https://api.twitter.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
 VERIFY_CREDENTIALS_URL = 'https://api.twitter.com/1.1/account/verify_credentials.json'
 CREATE_STATUS_URL = 'https://api.twitter.com/1.1/statuses/update.json'
-CREATE_WITH_MEDIA_URL = 'https://api.twitter.com/1.1/statuses/update_with_media.json'
+
+#CREATE_WITH_MEDIA_URL = 'https://api.twitter.com/1.1/statuses/update_with_media.json'
+UPLOAD_MEDIA_URL = 'https://upload.twitter.com/1.1/media/upload.json'
 RETWEET_STATUS_URL = 'https://api.twitter.com/1.1/statuses/retweet/{}.json'
 FAVE_STATUS_URL = 'https://api.twitter.com/1.1/favorites/create.json'
+
 
 TWEET_RE = re.compile(r'https?://(?:www\.|mobile\.)?twitter\.com/(\w+)/status(?:es)?/(\w+)')
 
@@ -202,6 +208,83 @@ def publish(site):
                 return m.group(1), m.group(2)
         return None, None
 
+    def upload_photo(photo):
+        current_app.logger.debug('uploading photo, name=%s, type=%s',
+                                 photo.filename, photo.content_type)
+        result = requests.post(UPLOAD_MEDIA_URL, files={
+            'media': (photo.filename, photo.stream, photo.content_type),
+        }, auth=auth)
+        if result.status_code // 100 != 2:
+            return None, result
+        result_data = result.json()
+        current_app.logger.debug('upload result: %s', result_data)
+        return result_data.get('media_id_string'), None
+
+    def upload_video(video, default_content_type='video/mp4'):
+        # chunked video upload
+        chunk_files = []
+
+        def cleanup():
+            for f in chunk_files:
+                os.unlink(f)
+
+        chunk_size = 1 << 20
+        total_size = 0
+        while True:
+            chunk = video.read(chunk_size)
+            if not chunk:
+                break
+            total_size += len(chunk)
+
+            tempfd, tempfn = tempfile.mkstemp('-%03d-%s' % (
+                len(chunk_files), video.filename))
+            with open(tempfn, 'wb') as f:
+                f.write(chunk)
+            chunk_files.append(tempfn)
+
+        current_app.logger.debug('init upload. type=%s, length=%s',
+                                 video.content_type, video.content_length)
+        result = requests.post(UPLOAD_MEDIA_URL, data={
+            'command': 'INIT',
+            'media_type': video.content_type or default_content_type,
+            'total_bytes': total_size,
+        }, auth=auth)
+        current_app.logger.debug('init result: %s %s', result, result.text)
+        if result.status_code // 100 != 2:
+            cleanup()
+            return None, result
+        result_data = result.json()
+        media_id = result_data.get('media_id_string')
+        segment_idx = 0
+
+        for chunk_file in chunk_files:
+            current_app.logger.debug('appending file: %s', chunk_file)
+            result = requests.post(UPLOAD_MEDIA_URL, data={
+                'command': 'APPEND',
+                'media_id': media_id,
+                'segment_index': segment_idx,
+            }, files={
+                'media': open(chunk_file, 'rb'),
+            }, auth=auth)
+            current_app.logger.debug(
+                'append result: %s %s', result, result.text)
+            if result.status_code // 100 != 2:
+                cleanup()
+                return None, result
+            segment_idx += 1
+
+        current_app.logger.debug('finalize uploading video: %s', media_id)
+        result = requests.post(UPLOAD_MEDIA_URL, data={
+            'command': 'FINALIZE',
+            'media_id': media_id,
+        }, auth=auth)
+        current_app.logger.debug('finalize result: %s %s', result, result.text)
+        if result.status_code // 100 != 2:
+            cleanup()
+            return None, result
+        cleanup()
+        return media_id, None
+
     data = {}
     content = request.form.get('content[value]') or request.form.get('content')
 
@@ -225,8 +308,18 @@ def publish(site):
         else:
             content = 'Liked: {}'.format(like_of)
 
-    if not content:
-        return util.make_publish_error_response('Missing "content" property')
+    media_ids = []
+    for photo in util.get_possible_array_value(request.files, 'photo'):
+        media_id, err = upload_photo(photo)
+        if err:
+            return util.wrap_silo_error_response(err)
+        media_ids.append(media_id)
+
+    for video in util.get_possible_array_value(request.files, 'video'):
+        media_id, err = upload_video(video)
+        if err:
+            return util.wrap_silo_error_response(err)
+        media_ids.append(media_id)
 
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:
@@ -245,19 +338,13 @@ def publish(site):
 
     target_length = 140
     permalink_url = request.form.get('url')
-    photo_file = request.files.get('photo')
-    if photo_file:
+    if media_ids:
         target_length -= 23
-
-    data['status'] = brevity.shorten(content, permalink=permalink_url,
-                                     target_length=target_length)
-
+        data['media_ids'] = ','.join(media_ids)
+    if content:
+        data['status'] = brevity.shorten(content, permalink=permalink_url,
+                                         target_length=target_length)
+    data = util.trim_nulls(data)
     current_app.logger.debug('publishing with params %s', data)
-    if photo_file:
-        return interpret_response(
-            requests.post(CREATE_WITH_MEDIA_URL, data=data,
-                          files={'media[]': photo_file}, auth=auth))
-
     return interpret_response(
-        requests.post(CREATE_STATUS_URL, data=util.trim_nulls(data),
-                      auth=auth))
+        requests.post(CREATE_STATUS_URL, data=data, auth=auth))
