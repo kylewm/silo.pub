@@ -307,7 +307,15 @@
       </tr>
       <tr>
         <td>photo</td>
-        <td>(file) If provided, post a photo, with content as the "caption".</td>
+        <td>(file) If provided, post a photo. <code>content</code>
+        will become the photo's "caption". <code>name</code> is
+        ignored.</td>
+      </tr>
+      <tr>
+        <td>video</td>
+        <td>(file) If provided, post a video. <code>name</code> will
+        be the title, and <code>content</code> will be the description
+        (note the difference with photos, whcih have only a caption).
       </tr>
     </table>
 

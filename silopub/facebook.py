@@ -14,7 +14,7 @@ import requests
 import sys
 
 SERVICE_NAME = 'facebook'
-PERMISSION_SCOPES = 'publish_actions'
+PERMISSION_SCOPES = 'publish_actions,user_videos'
 
 
 facebook = Blueprint('facebook', __name__)
@@ -165,37 +165,49 @@ def publish(site):
     content = request.form.get('content[value]') or request.form.get('content')
     permalink = request.form.get('url')
     photo_file = request.files.get('photo')
+    video_file = request.files.get('video')
     location = request.form.get('location')
 
     post_data = {'access_token': site.account.token}
     post_files = None
     api_endpoint = 'https://graph.facebook.com/v2.5/me/feed'
+    fburl_separator = 'posts'
 
-    if title and content:
-        # this looks like an article
+    message = (
+        content if not permalink else
+        '({})'.format(permalink) if not content else
+        '{} ({})'.format(content, permalink))
+
+    if video_file:
+        post_files = {'source': (video_file.filename, video_file.stream,
+                                 video_file.content_type or 'video/mp4')}
+        post_data['title'] = title
+        post_data['description'] = message
+        api_endpoint = 'https://graph-video.facebook.com/v2.5/me/videos'
+        fburl_separator = 'videos'
+    elif photo_file:
+        post_files = {'source': photo_file}
+        post_data['caption'] = message
+        # TODO support album id as alternative to 'me'
+        # TODO upload to "Timeline photos" album by default
+        api_endpoint = 'https://graph.facebook.com/v2.5/me/photos'
+        fburl_separator = 'photos'
+    elif title and content:
+        # looks like an article -- include the permalink as a 'link'
+        # instead of inline
         post_data['message'] = '{}\n\n{}'.format(title, content)
         post_data['link'] = permalink
         post_data['name'] = title
+    elif content:
+        post_data['message'] = message
+        tokens = brevity.tokenize(content)
+        # linkify the first url in the message
+        linktok = next((tok for tok in tokens if tok.tag == 'link'), None)
+        if linktok:
+            post_data['link'] = linktok.content
     else:
-        message = (
-            content if not permalink else
-            '({})'.format(permalink) if not content else
-            '{} ({})'.format(content, permalink))
-        if photo_file:
-            post_files = {'source': photo_file}
-            post_data['caption'] = message
-            # TODO support album id as alternative to 'me'
-            api_endpoint = 'https://graph.facebook.com/v2.5/me/photos'
-        else:
-            if not message:
-                return util.make_publish_error_response(
-                    'Request must contain a photo or content')
-            post_data['message'] = message
-            tokens = brevity.tokenize(content)
-            # linkify the first url in the message
-            linktok = next((tok for tok in tokens if tok.tag == 'link'), None)
-            if linktok:
-                post_data['link'] = linktok.content
+        return util.make_publish_error_response(
+            'Request must contain a photo, video, or content')
 
     if location:
         if location.isnumeric():
@@ -233,8 +245,10 @@ def publish(site):
                             places[0].get('id'))
                         post_data['place'] = places[0].get('id')
 
+    post_data = util.trim_nulls(post_data)
     current_app.logger.debug(
-        'Publishing to facebook %s: %s', api_endpoint, post_data)
+        'Publishing to facebook %s: data=%s, files=%s', api_endpoint,
+        post_data, post_files)
     r = requests.post(api_endpoint, data=post_data, files=post_files)
 
     # need Web Canvas permissions to do this, which I am too lazy to apply for
@@ -261,8 +275,8 @@ def publish(site):
         fbid = split[1]
 
     return util.make_publish_success_response(
-        'https://www.facebook.com/{}/posts/{}'.format(
-            site.account.username, fbid),
+        'https://www.facebook.com/{}/{}/{}'.format(
+            site.account.username, fburl_separator, fbid),
         data=resp_data)
 
 
