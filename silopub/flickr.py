@@ -262,7 +262,7 @@ def publish(site):
         return util.make_publish_success_response(like_of, result)
 
     # otherwise we're uploading a photo
-    photo_file = request.files.get('photo')
+    photo_file = request.files.get('photo') or request.files.get('video')
     if not photo_file:
         return util.make_publish_error_response('Missing "photo" attachment')
 
