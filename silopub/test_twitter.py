@@ -90,10 +90,13 @@ class TestTwitter(SiloPubTestCase):
 
     @patch('requests.post')
     def test_publish_blank(self, poster):
+        poster.return_value = FakeResponse(json.dumps({
+            'error': 'Missing required parameter: status',
+        }), 400)
         with self.app.test_request_context():
             resp = twitter.publish(self.site)
             self.assertEqual(400, resp.status_code)
-            self.assertIn('content', resp.get_data(as_text=True))
+            self.assertIn('Missing required', resp.get_data(as_text=True))
 
     @patch('requests.post')
     def test_publish_like(self, poster):

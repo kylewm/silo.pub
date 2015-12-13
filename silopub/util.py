@@ -183,10 +183,11 @@ def make_publish_error_response(message):
 
 def wrap_silo_error_response(r):
     current_app.logger.error('Upstream error: %r %s', r, r.text)
+    resp_data = r.text
     try:
         resp_data = r.json()
     except:
-        resp_data = r.text
+        pass
 
     resp = jsonify({
         'error': 'Bad Upstream Response',
@@ -207,6 +208,8 @@ def get_possible_array_value(args, key):
 
     :return list: the, possibly empty, list of values
     """
+    if not args:
+        return []
     if key in args:
         return [args.get(key)]
     return args.getlist(key + '[]')

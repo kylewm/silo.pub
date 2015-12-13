@@ -16,7 +16,6 @@ class FakeResponse:
         self.content = text and bytes(text, 'utf8')
         self.url = url
         self.headers = {'content-type': 'text/html'}
-        self.files = {}
 
     def json(self):
         return json.loads(self.text)
