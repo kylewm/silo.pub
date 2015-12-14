@@ -72,7 +72,7 @@ class Site(db.Model):
     # the id used to query apis
     site_id = db.Column(db.String(256))
     site_info = db.Column(JsonType)
-    
+
     # the connected service's OAuth access token and secret
     token = db.Column(db.String(512))
     token_secret = db.Column(db.String(512))

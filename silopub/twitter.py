@@ -45,7 +45,11 @@ def proxy_homepage(username):
     if not account:
         abort(404)
 
-    return util.render_proxy_homepage(account.sites[0], '@' + account.username)
+    name = '@' + account.username
+    url = account.sites[0].url
+    photo = (account.user_info or {}).get('profile_image_url_https')
+
+    return util.render_proxy_homepage(name, url, photo)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])

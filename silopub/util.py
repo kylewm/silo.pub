@@ -140,7 +140,7 @@ def posse_post_discovery(original, regex):
         current_app.logger.exception('MF2 Parser error: %s', e)
 
 
-def render_proxy_homepage(site, username):
+def render_proxy_homepage(name, url, photo):
     # TODO make endpoints visible because why not
     return """
 <!DOCTYPE html>
@@ -153,14 +153,19 @@ def render_proxy_homepage(site, username):
         <link rel="me" href="{me}">
     </head>
     <body>
-        Micropub proxy for <a href="{me}">{username}</a>
+        Micropub proxy for
+
+        <div class="h-card">
+          <img class="u-photo" src="{photo}"/>
+          <a class="p-name u-url" href="{me}">{username}</a>
+        </div>
+
     </body>
 </html>""".format(
       auth=url_for('micropub.indieauth', _external=True),
       token=url_for('micropub.token_endpoint', _external=True),
       micropub=url_for('micropub.micropub_endpoint', _external=True),
-      me=site.url,
-      username=username)
+      me=url, username=name, photo=photo)
 
 
 def make_publish_success_response(location, data=None):

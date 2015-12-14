@@ -28,7 +28,11 @@ def proxy_homepage(user_id):
     if not account:
         abort(404)
 
-    return util.render_proxy_homepage(account.sites[0], account.username)
+    name = account.username
+    url = account.sites[0].url
+    photo = (account.user_info or {}).get(
+        'picture', {}).get('data', {}).get('url')
+    return util.render_proxy_homepage(name, url, photo)
 
 
 @facebook.route('/facebook/authorize', methods=['POST'])
@@ -127,6 +131,7 @@ def process_authenticate_callback(callback_uri):
 
     r = requests.get('https://graph.facebook.com/v2.5/me', params={
         'access_token': access_token,
+        'fields': 'id,name,picture',
     })
 
     if r.status_code // 100 != 2:
