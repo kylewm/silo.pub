@@ -28,10 +28,10 @@ def proxy_homepage(user_id):
     if not account:
         abort(404)
 
-    name = account.username
+    info = account.user_info or {}
+    name = info.get('name') or account.username
     url = account.sites[0].url
-    photo = (account.user_info or {}).get(
-        'picture', {}).get('data', {}).get('url')
+    photo = info.get('picture', {}).get('data', {}).get('url')
     return util.render_proxy_homepage(name, url, photo)
 
 
