@@ -184,7 +184,7 @@ def token_endpoint():
         return util.urlenc_response(
             {'error', 'No site for authorization code!'}, 400)
 
-    token = Token.create_or_udpate(site, scope, client_id)
+    token = Token.create_or_update(site, scope, client_id)
     return util.urlenc_response({
         'access_token': token.token,
         'me': me,
