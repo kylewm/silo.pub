@@ -214,7 +214,10 @@ def publish(site):
         return util.make_publish_error_response(
             'Request must contain a photo, video, or content')
 
-    if location:
+    # posting Location to Facebook is disabled for now -- just
+    # searching lat/long does not get us close enough to assume we
+    # have the correct place.
+    if False and location:  
         if location.isnumeric():
             post_data['place'] = location
         else:
