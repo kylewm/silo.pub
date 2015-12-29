@@ -1,0 +1,15 @@
+{% extends "micropub.jinja2" %}
+
+{% block instructions %}
+
+  <p>
+    Now just use this URL when signing in to Micropub clients:
+  </p>
+  <p>
+    <input style="width: 100%" type="text" value="{{ url_for('goodreads.proxy_homepage', user_id=site.account.user_id, _external=True) }}"/>
+  </p>
+  <p>
+    Click <a href="{{ url_for('views.about') }}#proxy">for info about proxy URLs</a>.
+  </p>
+
+{% endblock %}

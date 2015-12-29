@@ -24,8 +24,30 @@ REQUEST_TOKEN_URL = 'https://www.goodreads.com/oauth/request_token'
 AUTHORIZE_URL = 'https://www.goodreads.com/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://www.goodreads.com/oauth/access_token'
 
+SEARCH_URL = 'https://www.goodreads.com/search/index.xml'
+REVIEW_CREATE_URL = 'https://www.goodreads.com/review.xml'
+SHELVES_LIST_URL = 'https://www.goodreads.com/shelf/list.xml'
+ADD_BOOKS_TO_SHELVES_URL = 'https://www.goodreads.com/shelf/add_books_to_shelves.xml'
+
+BOOK_URL_RE = re.compile('https?://(?:www\.)?goodreads\.com/book/show/(\d+)(?:\.(.*))?')
+
 
 goodreads = Blueprint('goodreads', __name__)
+
+
+@goodreads.route('/goodreads.com/<user_id>')
+def proxy_homepage(user_id):
+    account = Account.query.filter_by(
+        service=SERVICE_NAME, user_id=user_id).first()
+
+    if not account:
+        abort(404)
+
+    name = account.username
+    url = account.sites[0].url
+    image = account.user_info and account.user_info.get('image')
+
+    return util.render_proxy_homepage(name, url, image)
 
 
 @goodreads.route('/goodreads/authorize', methods=['POST'])
@@ -57,13 +79,15 @@ def callback():
             db.session.add(account)
 
         account.username = result['username']
-        account.user_info = result['user_info']
         account.token = result['token']
         account.token_secret = result['secret']
+        account.user_info = fetch_user_info(account.user_id)
+
+        url = 'https://www.goodreads.com/user/show/' + account.user_id
 
         account.update_sites([Goodreads(
-            url=result['user_url'],
-            domain='goodreads.com/{}'.format(account.user_id),
+            url=url,
+            domain='goodreads.com/' + account.user_id,
             site_id=account.user_id)])
 
         db.session.commit()
@@ -152,15 +176,29 @@ def process_authenticate_callback(callback_uri):
     user = root.find('user')
     user_id = user.attrib['id']
     user_name = user.findtext('name')
-    user_url = user.findtext('link')
 
     return {
         'token': access_token,
         'secret': access_token_secret,
         'user_id': user_id,
         'username': user_name,
-        'user_url': user_url,
-        'user_info': r.text,
+    }
+
+
+def fetch_user_info(user_id):
+    r = requests.get('https://www.goodreads.com/user/show/' + user_id + '.xml', params={
+        'key': current_app.config['GOODREADS_CLIENT_KEY'],
+    })
+    if r.status_code // 100 != 2:
+        return {
+            'error': 'Failed to fetch user info',
+            'upstream-status': r.status_code,
+            'upstream-data': r.text,
+        }
+    root = ETree.fromstring(r.content)
+    return {
+        'url': root.findtext('user/link'),
+        'image': root.findtext('user/image_url'),
     }
 
 
@@ -170,3 +208,129 @@ def publish(site):
         client_secret=current_app.config['GOODREADS_CLIENT_SECRET'],
         resource_owner_key=site.account.token,
         resource_owner_secret=site.account.token_secret)
+
+    # publish a review
+    # book_id (goodreads internal id)
+    # review[review] (text of the review)
+    # review[rating] (0-5) ... 0 = not given, 1-5 maps directly to h-review p-rating
+    # review[read_at]  dt-reviewed in YYYY-MM-DD
+    # shelf -- check p-category for any that match existing goodreads shelves,
+    # TODO consider creating shelves for categories?
+
+    # item might be an ISBN, a Goodreads URL, or just a title
+
+    item = request.form.get('item')
+    if not item:
+        item_name = request.form.get('item[name]')
+        item_author = request.form.get('item[author]')
+        if item_name and item_author:
+            item = item_name + ' ' + item_author
+
+    rating = request.form.get('rating')
+    review = next((request.form.get(key) for key in (
+        'description[value]', 'description', 'content[value]',
+        'content', 'summary', 'name')), None)
+    categories = util.get_possible_array_value(request.form, 'category')
+
+    if not item:
+        return util.make_publish_error_response(
+            'Expected "item": a URL, ISBN, or book title to review')
+
+    m = item and BOOK_URL_RE.match(item)
+    if m:
+        book_id = m.group(1)
+    else:
+        # try searching for item
+        r = requests.get(SEARCH_URL, params={
+            'q': item,
+            'key': current_app.config['GOODREADS_CLIENT_KEY'],
+        })
+        if r.status_code // 100 != 2:
+            return util.wrap_silo_error_response(r)
+        root = ETree.fromstring(r.content)
+        book = root.find('search/results/work/best_book')
+        if not book:
+            return {
+                'error': 'Goodreads found no results for query: ' + item,
+                'upstream-data': r.text
+            }
+        book_id = book.findtext('id')
+
+    # add book to shelves
+    all_shelves = set()
+    if categories:
+        r = requests.get(SHELVES_LIST_URL, params={
+            'key': current_app.config['GOODREADS_CLIENT_KEY'],
+            'user_id': site.account.user_id,
+        })
+        if r.status_code // 100 != 2:
+            return util.wrap_silo_error_response(r)
+        root = ETree.fromstring(r.content)
+        for shelf in root.find('shelves'):
+            all_shelves.add(shelf.findtext('name'))
+
+    matched_categories = [c for c in categories if c in all_shelves]
+    permalink = 'https://www.goodreads.com/book/show/' + book_id
+    resp_data = {}
+
+    # publish a review of the book
+    if rating or review:
+        r = requests.post(REVIEW_CREATE_URL, data=util.trim_nulls({
+            'book_id': book_id,
+            'review[rating]': rating,
+            'review[review]': review,
+            # first shelf that matches
+            'shelf': matched_categories.pop(0) if matched_categories else None,
+        }), auth=auth)
+        if r.status_code // 100 != 2:
+            return util.wrap_silo_error_response(r)
+
+        # example response
+        """<?xml version="1.0" encoding="UTF-8"?>
+        <review>
+          <id type="integer">1484927007</id>
+          <user-id type="integer">4544167</user-id>
+          <book-id type="integer">9361589</book-id>
+          <rating type="integer">2</rating>
+          <read-status>read</read-status>
+          <sell-flag type="boolean">false</sell-flag>
+          <review></review>
+          <recommendation nil="true"/>
+          <read-at type="datetime" nil="true"/>
+          <updated-at type="datetime">2015-12-29T21:25:34+00:00</updated-at>
+          <created-at type="datetime">2015-12-29T21:25:34+00:00</created-at>
+          <comments-count type="integer">0</comments-count>
+          <weight type="integer">0</weight>
+          <ratings-sum type="integer">0</ratings-sum>
+          <ratings-count type="integer">0</ratings-count>
+          <notes nil="true"/>
+          <spoiler-flag type="boolean">false</spoiler-flag>
+          <recommender-user-id1 type="integer">0</recommender-user-id1>
+          <recommender-user-name1 nil="true"/>
+          <work-id type="integer">14245059</work-id>
+          <read-count nil="true"/>
+          <last-comment-at type="datetime" nil="true"/>
+          <started-at type="datetime" nil="true"/>
+          <hidden-flag type="boolean">false</hidden-flag>
+          <language-code type="integer" nil="true"/>
+          <last-revision-at type="datetime">2015-12-29T21:25:34+00:00</last-revision-at>
+          <non-friends-rating-count type="integer">0</non-friends-rating-count>
+        </review>"""
+
+        root = ETree.fromstring(r.content)
+        review_id = root.findtext('id')
+        permalink = 'https://www.goodreads.com/review/show/' + review_id
+        resp_data['review-response'] = r.text
+
+    if matched_categories:
+        r = requests.post(ADD_BOOKS_TO_SHELVES_URL, data={
+            'bookids': book_id,
+            'shelves': ','.join(matched_categories),
+        }, auth=auth)
+        if r.status_code // 100 != 2:
+            current_app.logger.error(
+                'Failed to add book %s to additional shelves %r. Status: %s, Response: %r',
+                book_id, matched_categories, r.status_code, r.text)
+        resp_data['shelves-response'] = r.text
+
+    return util.make_publish_success_response(permalink, data=resp_data)
