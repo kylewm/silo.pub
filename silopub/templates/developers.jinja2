@@ -6,6 +6,18 @@
       including the expected and supported fields for each serivce.
     </p>
 
+    <ul>
+      <li><a href="#micropub">Micropub</a></li>
+      <li><a href="#post">Creating a Post</a></li>
+      <li><a href="#vocab-tumblr">Tumblr</a></li>
+      <li><a href="#vocab-wordpress">Wordpress</a></li>
+      <li><a href="#vocab-blogger">Blogger</a></li>
+      <li><a href="#vocab-twitter">Twitter</a></li>
+      <li><a href="#vocab-facebook">Facebook</a></li>
+      <li><a href="#vocab-goodreads">Goodreads</a></li>
+    </ul>
+
+
     <h2 id="micropub">Micropub</h2>
     <p>
       <a href="https://indiewebcamp.com/Micropub">Micropub</a> is an
@@ -382,6 +394,38 @@
     Note: The Location header of the response will be the URL of the
     photo itself, since faves don't have their own URL.
 
+    <h3 id="vocab-goodreads">Goodreads</h3>
+
+    <h4>Review</h4>
+
+    <table class="table table-striped">
+
+      <tr>
+        <td>item</td>
+        <td>The Goodreads URL, ISBN number, or simply the title (with or without author) of the book. We'll pull the Goodreads ID from the URL if it's given, or otherwise use the <a href="https://www.goodreads.com/api/index#search.books">Goodreads search API</a> to find the book.</td>
+      </tr>
+      <tr>
+        <td>description[value]<br/>
+          or description<br/>
+          or content[value]<br/>
+          or content<br/>
+          or summary<br/>
+          or name</td>
+        <td>Optional. A descriptive review of the book.</td>
+      </tr>
+      <tr>
+        <td>rating</td>
+        <td>Optional. A rating 1 to 5, where 5 is the highest rating.</td>
+      </tr>
+      <tr>
+        <td>category</td>
+        <td>One or more shelves to add this book to. Shelves that do not already exist for this user will be ignored.</td>
+      </tr>
+    </table>
+
+    <h4>Comments</h4>
+
+    TODO!
 
   </div>
 

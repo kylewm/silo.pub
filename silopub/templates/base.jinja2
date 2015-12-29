@@ -32,6 +32,13 @@
       }
     </style>
 
+    <script>
+      // https://github.com/twbs/bootstrap/issues/1768#issuecomment-6531466
+      var shiftWindow = function() { scrollBy(0, -50) };
+      if (location.hash) shiftWindow();
+      window.addEventListener("hashchange", shiftWindow);
+    </script>
+
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='dish32.png') }}">
     <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='dish64.png') }}">
     <link rel="icon" type="image/png" sizes="128x128" href="{{ url_for('static', filename='dish128.png') }}">
