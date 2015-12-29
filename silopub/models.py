@@ -213,3 +213,12 @@ class Flickr(Site):
 
     def __repr__(self):
         return 'Flickr[username={}]'.format(self.site_id)
+
+
+class Goodreads(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'goodreads'
+    }
+
+    def __repr__(self):
+        return 'Goodreads[username={}]'.format(self.site_id)

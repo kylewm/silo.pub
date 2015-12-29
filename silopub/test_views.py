@@ -28,6 +28,7 @@ class TestViews(SiloPubTestCase):
                          domain='fake2.example.com')
 
         acct = Account(service=FAKE_SERVICE_NAME,
+                       user_id='1234',
                        username='fakeuser',
                        sites=[site1, site2])
 
@@ -36,7 +37,7 @@ class TestViews(SiloPubTestCase):
 
         resp = self.client.get('/setup/account/', query_string={
             'service': FAKE_SERVICE_NAME,
-            'username': 'fakeuser',
+            'user_id': '1234',
         })
         resp_text = resp.get_data(as_text=True)
 
@@ -47,6 +48,7 @@ class TestViews(SiloPubTestCase):
         site1 = FakeSite(url='https://fake1.example.com',
                          domain='fake1.example.com')
         acct = Account(service=FAKE_SERVICE_NAME,
+                       user_id='1234',
                        username='fakeuser',
                        sites=[site1])
 
@@ -55,7 +57,7 @@ class TestViews(SiloPubTestCase):
 
         resp = self.client.get('/setup/account/', query_string={
             'service': FAKE_SERVICE_NAME,
-            'username': 'fakeuser',
+            'user_id': '1234',
         })
 
         self.assertEqual(302, resp.status_code)

@@ -101,7 +101,7 @@ def callback():
             s.domain for s in account.sites)))
         util.set_authed(account.sites)
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
-                                username=account.username))
+                                user_id=account.user_id))
 
     except:
         current_app.logger.exception('During Tumblr authorization callback')

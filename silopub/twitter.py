@@ -94,7 +94,7 @@ def callback():
             s.domain for s in account.sites)))
         util.set_authed(account.sites)
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
-                                username=account.username))
+                                user_id=account.user_id))
 
     except:
         current_app.logger.exception('During Twitter authorization callback')
@@ -148,7 +148,8 @@ def process_authenticate_callback(callback_uri):
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         resource_owner_key=request_token,
-        resource_owner_secret=request_token_secret)
+        resource_owner_secret=request_token_secret,
+        callback_uri=callback_uri)
     oauth_session.parse_authorization_response(request.url)
     # get the access token and secret
     r = oauth_session.fetch_access_token(ACCESS_TOKEN_URL)

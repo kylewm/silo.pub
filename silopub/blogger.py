@@ -79,7 +79,7 @@ def callback():
 
     return redirect(url_for('views.setup_account',
                             service=SERVICE_NAME,
-                            username=account.username))
+                            user_id=account.user_id))
 
 
 def get_authorize_url(redirect_uri):

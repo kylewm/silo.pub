@@ -27,9 +27,9 @@ def about():
 @views.route('/setup/account/')
 def setup_account():
     service = request.args.get('service')
-    username = request.args.get('username')
+    user_id = request.args.get('user_id')
     account = Account.query.filter_by(
-        service=service, username=username).first()
+        service=service, user_id=user_id).first()
 
     if not account:
         abort(404)

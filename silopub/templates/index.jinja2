@@ -55,6 +55,14 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       </form>
 
+
+      <form method="post" name="goodreads-start" action="{{ url_for('goodreads.authorize') }}" class="signup">
+        <input alt="Sign in with Goodreads"
+               src="{{ url_for('static', filename='goodreads.png') }}" type="image">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      </form>
+
+
     </div>
 
 

@@ -6,6 +6,7 @@ from silopub import tumblr
 from silopub import twitter
 from silopub import facebook
 from silopub import flickr
+from silopub import goodreads
 from silopub import micropub
 from silopub import ext
 from silopub.models import *
@@ -44,6 +45,7 @@ def create_app(config_path='../silopub.cfg', configurator=None):
     app.register_blueprint(twitter.twitter)
     app.register_blueprint(facebook.facebook)
     app.register_blueprint(flickr.flickr)
+    app.register_blueprint(goodreads.goodreads)
     app.register_blueprint(micropub.micropub)
 
     micropub.register_service('wordpress', wordpress)
@@ -52,6 +54,7 @@ def create_app(config_path='../silopub.cfg', configurator=None):
     micropub.register_service('twitter', twitter)
     micropub.register_service('facebook', facebook)
     micropub.register_service('flickr', flickr)
+    micropub.register_service('goodreads', goodreads)
 
     return app
 
