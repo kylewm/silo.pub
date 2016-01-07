@@ -49,7 +49,8 @@ def proxy_homepage(username):
     url = account.sites[0].url
     photo = (account.user_info or {}).get('profile_image_url_https')
 
-    return util.render_proxy_homepage(name, url, photo)
+    return util.render_proxy_homepage(
+        name, url, photo, '//abs.twimg.com/favicons/favicon.ico')
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])

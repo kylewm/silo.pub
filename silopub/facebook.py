@@ -32,7 +32,8 @@ def proxy_homepage(user_id):
     name = info.get('name') or account.username
     url = account.sites[0].url
     photo = info.get('picture', {}).get('data', {}).get('url')
-    return util.render_proxy_homepage(name, url, photo)
+    return util.render_proxy_homepage(
+        name, url, photo, 'https://static.xx.fbcdn.net/rsrc.php/yl/r/H3nktOa7ZMg.ico')
 
 
 @facebook.route('/facebook/authorize', methods=['POST'])
@@ -217,7 +218,7 @@ def publish(site):
     # posting Location to Facebook is disabled for now -- just
     # searching lat/long does not get us close enough to assume we
     # have the correct place.
-    if False and location:  
+    if False and location:
         if location.isnumeric():
             post_data['place'] = location
         else:

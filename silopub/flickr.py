@@ -56,7 +56,8 @@ def proxy_homepage(nsid):
     else:
         photo = 'https://www.flickr.com/images/buddyicon.gif'
 
-    return util.render_proxy_homepage(name, url, photo)
+    return util.render_proxy_homepage(
+        name, url, photo, 'https://s.yimg.com/pw/favicon.ico')
 
 
 @flickr.route('/flickr/authorize', methods=['POST'])

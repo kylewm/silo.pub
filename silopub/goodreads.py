@@ -47,7 +47,8 @@ def proxy_homepage(user_id):
     url = account.sites[0].url
     image = account.user_info and account.user_info.get('image')
 
-    return util.render_proxy_homepage(name, url, image)
+    return util.render_proxy_homepage(
+        name, url, image, 'https://www.goodreads.com/favicon.ico')
 
 
 @goodreads.route('/goodreads/authorize', methods=['POST'])
