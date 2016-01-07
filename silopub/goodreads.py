@@ -121,7 +121,7 @@ def get_authorize_url(callback_uri):
         }))
 
 
-def get_authenticate_url(callback_uri):
+def get_authenticate_url(callback_uri, **kwargs):
     # goodreads doesn't have a separate authenticate endpoint
     return get_authorize_url(callback_uri)
 
@@ -276,6 +276,7 @@ def publish(site):
 
     # publish a review of the book
     if rating or review:
+        current_app.logger.debug('creating a review: book=%s, rating=%s, review=%s', book_id, rating, review)
         r = requests.post(REVIEW_CREATE_URL, data=util.trim_nulls({
             'book_id': book_id,
             'review[rating]': rating,
