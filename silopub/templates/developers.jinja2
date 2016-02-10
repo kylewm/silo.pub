@@ -225,8 +225,8 @@
         <td>URL of a tweet to reply to. If the repliee is not the
         currently authorized user, and the post content does not
         include the @-name of the repliee, it will automatically be
-        prepended to the string (otherwise Twitter does ot really
-        recognized it as a reply)</td>
+        prepended to the string (otherwise Twitter does not
+        recognize it as a reply)</td>
       </tr>
       <tr>
         <td>location</td>
@@ -241,7 +241,7 @@
         (<code>photo[]</code>). Twitter documentation says images can
         be up to 5MB, but it seems to complain about anything over
         3MB. Note that this reduces the number of allowed characters
-        in the post content.</td>
+        in the post content in order to fit the URL of the image.</td>
       </tr>
       <tr>
         <td>video</td>
@@ -327,7 +327,7 @@
         <td>video</td>
         <td>(file) If provided, post a video. <code>name</code> will
         be the title, and <code>content</code> will be the description
-        (note the difference with photos, whcih have only a caption).
+        (note the difference with photos, which have only a caption).
       </tr>
     </table>
 
