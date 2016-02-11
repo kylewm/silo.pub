@@ -158,7 +158,7 @@ def render_proxy_homepage(name, url, photo, icon):
 
         <div class="h-card">
           <img class="u-photo" src="{photo}"/>
-          <a class="p-name u-url" href="{me}">{username}</a>
+          <a class="p-name u-url u-uid" href="{me}">{username}</a>
         </div>
 
     </body>
