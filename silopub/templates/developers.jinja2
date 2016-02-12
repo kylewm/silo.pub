@@ -225,8 +225,10 @@
         <td>URL of a tweet to reply to. If the repliee is not the
         currently authorized user, and the post content does not
         include the @-name of the repliee, it will automatically be
-        prepended to the string (otherwise Twitter does not
-        recognize it as a reply)</td>
+        prepended to the string (otherwise Twitter does not recognize
+        it as a reply). Use in-reply-to[] to pass multiple
+        values &mdash; We'll use the first one that looks like a tweet
+        permalink.</td>
       </tr>
       <tr>
         <td>location</td>
@@ -256,7 +258,10 @@
     <table class="table table-striped">
       <tr>
         <td>repost-of</td>
-        <td>URL of a tweet to retweet. If specified, all other fields are ignored.</td>
+        <td>URL of a tweet to retweet. If specified, all other fields
+        are ignored. Multiple values are allowed with repost-of[]
+        &mdash; We'll use the first one that looks like a tweet
+        permalink.</td>
       </tr>
     </table>
 
@@ -265,7 +270,10 @@
     <table class="table table-striped">
       <tr>
         <td>like-of</td>
-        <td>URL of a tweet to like. If specified, all other fields are ignored.</td>
+        <td>URL of a tweet to like. If specified, all other fields are
+        ignored. Multiple values are allowed with like-of[] &mdash;
+        We'll use the first one that looks like a tweet
+        permalink.</td>
       </tr>
     </table>
 
