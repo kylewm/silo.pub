@@ -294,25 +294,25 @@ def publish(site):
     data = {}
     content = request.form.get('content[value]') or request.form.get('content')
 
-    repost_of = request.form.get('repost-of')
-    if repost_of:
+    repost_ofs = util.get_possible_array_value(request.form, 'repost-of')
+    for repost_of in repost_ofs:
         _, tweet_id = get_tweet_id(repost_of)
         if tweet_id:
             return interpret_response(
                 requests.post(RETWEET_STATUS_URL.format(tweet_id), auth=auth))
-        else:
-            content = 'Reposted: {}'.format(repost_of)
+    else:
+        if repost_ofs:
+            content = 'Reposted: {}'.format(repost_ofs[0])
 
-    like_of = request.form.get('like-of')
-    if like_of:
+    like_ofs = util.get_possible_array_value(request.form, 'like-of')
+    for like_of in like_ofs:
         _, tweet_id = get_tweet_id(like_of)
         if tweet_id:
             return interpret_response(
-                requests.post(FAVE_STATUS_URL, data={
-                    'id': tweet_id,
-                }, auth=auth))
-        else:
-            content = 'Liked: {}'.format(like_of)
+                requests.post(FAVE_STATUS_URL, data={'id': tweet_id,}, auth=auth))
+    else:
+        if like_ofs:
+            content = 'Liked: {}'.format(like_ofs[0])
 
     media_ids = []
     for photo in util.get_possible_array_value(request.files, 'photo'):
@@ -327,16 +327,19 @@ def publish(site):
             return util.wrap_silo_error_response(err)
         media_ids.append(media_id)
 
-    in_reply_to = request.form.get('in-reply-to')
-    if in_reply_to:
+    in_reply_tos = util.get_possible_array_value(request.form, 'in-reply-to')
+    for in_reply_to in in_reply_tos:
         twitterer, tweet_id = get_tweet_id(in_reply_to)
         if tweet_id:
+            found_reply_id = True
             data['in_reply_to_status_id'] = tweet_id
             if (twitterer != site.account.username
                     and '@' + twitterer not in content):
                 content = '@{} {}'.format(twitterer, content)
-        else:
-            content = 'Re: {}, {}'.format(in_reply_to, content)
+            break
+    else:
+        if in_reply_tos:
+            content = 'Re: {}, {}'.format(in_reply_tos[0], content)
 
     location = request.form.get('location')
     current_app.logger.debug('received location param: %s', location)
