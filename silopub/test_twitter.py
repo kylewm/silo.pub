@@ -3,8 +3,8 @@ from silopub import twitter
 from silopub.models import Account, Twitter
 from silopub.testutil import SiloPubTestCase, FakeResponse
 from unittest.mock import patch, ANY
+from werkzeug.datastructures import MultiDict
 import json
-
 
 CALLBACK_URI = 'http://localhost/callback'
 
@@ -101,9 +101,9 @@ class TestTwitter(SiloPubTestCase):
     @patch('requests.post')
     def test_publish_like(self, poster):
         with self.app.test_request_context():
-            request.form = {
+            request.form = MultiDict({
                 'like-of': 'https://twitter.com/jack/status/20',
-            }
+            })
             poster.return_value = FakeResponse(json.dumps({
                 'user': {'screen_name': 'jack'},
                 'id_str': '20',
@@ -119,9 +119,9 @@ class TestTwitter(SiloPubTestCase):
     @patch('requests.post')
     def test_publish_retweet(self, poster):
         with self.app.test_request_context():
-            request.form = {
+            request.form = MultiDict({
                 'repost-of': 'https://twitter.com/mallelis/status/668573590170828802',
-            }
+            })
             poster.return_value = FakeResponse(json.dumps({
                 'user': {'screen_name': 'jenny'},
                 'id_str': '8675309',
@@ -137,10 +137,10 @@ class TestTwitter(SiloPubTestCase):
     @patch('requests.post')
     def test_publish_tweet(self, poster):
         with self.app.test_request_context():
-            request.form = {
+            request.form = MultiDict({
                 'content': 'You shall not pass by reference!',
                 'url': 'https://foo.com/bar',
-            }
+            })
             request.files = {}
 
             poster.return_value = FakeResponse(json.dumps({
@@ -160,11 +160,11 @@ class TestTwitter(SiloPubTestCase):
     @patch('requests.post')
     def test_publish_reply(self, poster):
         with self.app.test_request_context():
-            request.form = {
+            request.form = MultiDict({
                 'in-reply-to': 'https://twitter.com/mashable/status/668134813325508609',
                 'content': 'Speak, friend, and enter',
                 'url': 'http://bar.co.uk/bat',
-            }
+            })
             request.files = {}
             poster.return_value = FakeResponse(json.dumps({
                 'user': {'screen_name': 'moriafan'},
