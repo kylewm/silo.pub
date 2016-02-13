@@ -334,7 +334,7 @@ def publish(site):
             found_reply_id = True
             data['in_reply_to_status_id'] = tweet_id
             if (twitterer != site.account.username
-                    and '@' + twitterer not in content):
+                    and '@' + twitterer.lower() not in content.lower()):
                 content = '@{} {}'.format(twitterer, content)
             break
     else:
