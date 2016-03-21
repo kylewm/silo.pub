@@ -8,7 +8,7 @@ html5lib==0.9999999
 itsdangerous==0.24
 Jinja2==2.8
 MarkupSafe==0.23
-mf2py==1.0.3
+mf2py==1.0.4
 oauthlib==1.0.3
 psycopg2==2.6.1
 PyJWT==1.4.0
