@@ -9,7 +9,6 @@ itsdangerous==0.24
 Jinja2==2.7.3
 MarkupSafe==0.23
 mf2py==1.0.0
-oauthlib==0.7.2
 psycopg2==2.6
 PyJWT==1.4.0
 redis==2.10.3
