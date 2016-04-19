@@ -289,13 +289,12 @@ def publish(site):
         return media_id, None
 
     data = {}
+    format = brevity.FORMAT_NOTE
+    content = request.form.get('content[value]') or request.form.get('content')
 
     if 'name' in request.form:
         format = brevity.FORMAT_ARTICLE
         content = request.form.get('name')
-    else:
-        format = brevity.FORMAT_ARTICLE
-        content = request.form.get('content[value]') or request.form.get('content')
 
     repost_ofs = util.get_possible_array_value(request.form, 'repost-of')
     for repost_of in repost_ofs:
