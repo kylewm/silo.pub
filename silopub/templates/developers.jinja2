@@ -215,6 +215,13 @@
         this link will be appended. Otherwise, it is ignored.</td>
       </tr>
       <tr>
+        <td>name</td>
+        <td>title of an article. If provided, this supersedes the content,
+        and implies a different formatting: "Article Title: url".
+        Unlike the note case, <code>url</code> will be included even if the
+        <code>name</code> is much shorter than the character limit.</td>
+      </tr>
+      <tr>
         <td>content[value] or content</td>
         <td>text of the note. If this is longer than 140 characters
         (assuming t.co wrapping), silo.pub will automatically truncate

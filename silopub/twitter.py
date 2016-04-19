@@ -1,6 +1,4 @@
 import html
-import itertools
-import json
 import os
 import re
 import requests
@@ -9,10 +7,9 @@ import tempfile
 import urllib.parse
 
 from flask import Blueprint, current_app, redirect, url_for, request, flash
-from flask import make_response, session, abort
+from flask import session, abort
 from requests_oauthlib import OAuth1Session, OAuth1
 from silopub import util
-from silopub import micropub
 from silopub.ext import db
 from silopub.models import Account, Twitter
 import brevity
@@ -292,7 +289,13 @@ def publish(site):
         return media_id, None
 
     data = {}
-    content = request.form.get('content[value]') or request.form.get('content')
+
+    if 'name' in request.form:
+        format = brevity.FORMAT_ARTICLE
+        content = request.form.get('name')
+    else:
+        format = brevity.FORMAT_ARTICLE
+        content = request.form.get('content[value]') or request.form.get('content')
 
     repost_ofs = util.get_possible_array_value(request.form, 'repost-of')
     for repost_of in repost_ofs:
@@ -309,7 +312,7 @@ def publish(site):
         _, tweet_id = get_tweet_id(like_of)
         if tweet_id:
             return interpret_response(
-                requests.post(FAVE_STATUS_URL, data={'id': tweet_id,}, auth=auth))
+                requests.post(FAVE_STATUS_URL, data={'id': tweet_id}, auth=auth))
     else:
         if like_ofs:
             content = 'Liked: {}'.format(like_ofs[0])
@@ -331,7 +334,6 @@ def publish(site):
     for in_reply_to in in_reply_tos:
         twitterer, tweet_id = get_tweet_id(in_reply_to)
         if tweet_id:
-            found_reply_id = True
             data['in_reply_to_status_id'] = tweet_id
             if (twitterer != site.account.username
                     and '@' + twitterer.lower() not in content.lower()):
@@ -345,14 +347,14 @@ def publish(site):
     current_app.logger.debug('received location param: %s', location)
     data['lat'], data['long'] = util.parse_geo_uri(location)
 
-    target_length = 140
     permalink_url = request.form.get('url')
     if media_ids:
-        target_length -= 23
+        format = '+'.join((format, brevity.FORMAT_MEDIA))
         data['media_ids'] = ','.join(media_ids)
+
     if content:
         data['status'] = brevity.shorten(content, permalink=permalink_url,
-                                         target_length=target_length)
+                                         format=format)
     data = util.trim_nulls(data)
     current_app.logger.debug('publishing with params %s', data)
     return interpret_response(

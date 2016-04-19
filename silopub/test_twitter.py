@@ -2,8 +2,9 @@ from flask import request, session
 from silopub import twitter
 from silopub.models import Account, Twitter
 from silopub.testutil import SiloPubTestCase, FakeResponse
-from unittest.mock import patch, ANY
-from werkzeug.datastructures import MultiDict
+from unittest.mock import call, patch, ANY
+from werkzeug.datastructures import MultiDict, FileStorage
+import os
 import json
 
 CALLBACK_URI = 'http://localhost/callback'
@@ -156,6 +157,44 @@ class TestTwitter(SiloPubTestCase):
                     'status': 'You shall not pass by reference!',
                 },
                 auth=ANY)
+
+    @patch('requests.post')
+    def test_publish_media(self, poster):
+        with self.app.test_request_context():
+            request.form = MultiDict({
+                # there are 23 characters remaining; not quite enough for a space + url
+                'content': 'schon nach 40 minuten fast 20 mal so viele leser per #instantarticles gehabt, wie in 6 monaten per #amphtml-artikeln.',
+            })
+            request.files = MultiDict({
+                'photo': FileStorage(
+                    open(os.path.dirname(__file__) + '/static/dish256.png'),
+                    'dish256.png'),
+            })
+
+            poster.side_effect = [
+                FakeResponse(json.dumps({
+                    'media_id_string': '2112',
+                })),
+                FakeResponse(json.dumps({
+                    'user': {'screen_name': 'fakeuser'},
+                    'id_str': '0123456789',
+                })),
+            ]
+
+            resp = twitter.publish(self.site)
+            self.assertEqual(201, resp.status_code)
+            self.assertEqual('https://twitter.com/fakeuser/status/0123456789',
+                             resp.headers['location'])
+
+            poster.assert_has_calls([
+                call(twitter.UPLOAD_MEDIA_URL, files={
+                    'media': ('dish256.png', ANY, ANY),
+                }, auth=ANY),
+                call(twitter.CREATE_STATUS_URL, data={
+                    'status': 'schon nach 40 minuten fast 20 mal so viele leser per #instantarticles gehabt, wie in 6 monaten per\u2026',
+                    'media_ids': '2112',
+                }, auth=ANY)
+            ])
 
     @patch('requests.post')
     def test_publish_reply(self, poster):
