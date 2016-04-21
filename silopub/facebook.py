@@ -29,11 +29,13 @@ def proxy_homepage(user_id):
         abort(404)
 
     info = account.user_info or {}
-    name = info.get('name') or account.username
-    url = account.sites[0].url
-    photo = info.get('picture', {}).get('data', {}).get('url')
     return util.render_proxy_homepage(
-        name, url, photo, 'https://static.xx.fbcdn.net/rsrc.php/yl/r/H3nktOa7ZMg.ico')
+        user_name=info.get('name') or account.username,
+        user_url=account.sites[0].url,
+        user_photo=info.get('picture', {}).get('data', {}).get('url'),
+        service_name='Facebook',
+        service_url='https://www.facebook.com/',
+        service_photo='https://static.xx.fbcdn.net/rsrc.php/yl/r/H3nktOa7ZMg.ico')
 
 
 @facebook.route('/facebook/authorize', methods=['POST'])

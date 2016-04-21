@@ -42,12 +42,13 @@ def proxy_homepage(username):
     if not account:
         abort(404)
 
-    name = '@' + account.username
-    url = account.sites[0].url
-    photo = (account.user_info or {}).get('profile_image_url_https')
-
     return util.render_proxy_homepage(
-        name, url, photo, '//abs.twimg.com/favicons/favicon.ico')
+        user_name='@' + account.username,
+        user_url=account.sites[0].url,
+        user_photo=(account.user_info or {}).get('profile_image_url_https'),
+        service_name='Twitter',
+        service_url='https://twitter.com/',
+        service_photo='https://abs.twimg.com/favicons/favicon.ico')
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])

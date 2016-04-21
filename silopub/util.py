@@ -140,7 +140,8 @@ def posse_post_discovery(original, regex):
         current_app.logger.exception('MF2 Parser error: %s', e)
 
 
-def render_proxy_homepage(name, url, photo, icon):
+def render_proxy_homepage(user_name, user_url, user_photo,
+                          service_name, service_url, service_photo):
     # TODO make endpoints visible because why not
     return """
 <!DOCTYPE html>
@@ -150,23 +151,30 @@ def render_proxy_homepage(name, url, photo, icon):
         <link rel="authorization_endpoint" href="{auth}">
         <link rel="token_endpoint" href="{token}">
         <link rel="micropub" href="{micropub}">
-        <link rel="me" href="{me}">
-        <link href="{icon}" rel="shortcut icon">
+        <link rel="me" href="{user_url}">
+        <link href="{service_photo}" rel="shortcut icon">
     </head>
     <body>
         Micropub proxy for
-
-        <div class="h-card">
-          <img class="u-photo" src="{photo}"/>
-          <a class="p-name u-url u-uid" href="{me}">{username}</a>
+        <div class="h-x-syndication-target">
+          <a class="p-user h-card" href="user_url">
+            <img src="{user_photo}" alt="" />
+            {user_name}
+          </a>
+          on
+          <a class="p-service h-card" href="service_url">
+            <img src="{service_photo}" alt="" />
+            {service_name}
+          </a>
         </div>
-
     </body>
 </html>""".format(
-      auth=url_for('micropub.indieauth', _external=True),
-      token=url_for('micropub.token_endpoint', _external=True),
-      micropub=url_for('micropub.micropub_endpoint', _external=True),
-      me=url, username=name, photo=photo, icon=icon)
+    auth=url_for('micropub.indieauth', _external=True),
+    token=url_for('micropub.token_endpoint', _external=True),
+    micropub=url_for('micropub.micropub_endpoint', _external=True),
+    user_name=user_name, user_url=user_url, user_photo=user_photo,
+    service_name=service_name, service_url=service_url,
+    service_photo=service_photo)
 
 
 def make_publish_success_response(location, data=None):

@@ -42,9 +42,6 @@ def proxy_homepage(nsid):
     if not account:
         abort(404)
 
-    name = account.username
-    url = account.sites[0].url
-
     info = (account.user_info or {}).get('person', {})
     iconserver = info.get('iconserver')
     iconfarm = info.get('iconfarm')
@@ -57,7 +54,12 @@ def proxy_homepage(nsid):
         photo = 'https://www.flickr.com/images/buddyicon.gif'
 
     return util.render_proxy_homepage(
-        name, url, photo, 'https://s.yimg.com/pw/favicon.ico')
+        user_name=account.username,
+        user_url=account.sites[0].url,
+        user_photo=photo,
+        service_name='Flickr',
+        service_url='https://www.flickr.com/',
+        service_photo='https://s.yimg.com/pw/favicon.ico')
 
 
 @flickr.route('/flickr/authorize', methods=['POST'])

@@ -43,12 +43,13 @@ def proxy_homepage(user_id):
     if not account:
         abort(404)
 
-    name = account.username
-    url = account.sites[0].url
-    image = account.user_info and account.user_info.get('image')
-
     return util.render_proxy_homepage(
-        name, url, image, 'https://www.goodreads.com/favicon.ico')
+        user_name=account.username,
+        user_url=account.sites[0].url,
+        user_photo=account.user_info and account.user_info.get('image'),
+        service_name='Goodreads',
+        service_url='https://www.goodreads.com/',
+        service_photo='https://www.goodreads.com/favicon.ico')
 
 
 @goodreads.route('/goodreads/authorize', methods=['POST'])
