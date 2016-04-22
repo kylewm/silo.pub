@@ -56,7 +56,7 @@
       </form>
 
 
-      <form method="post" name="github-start" action="{{ url_for('github.authorize') }}" class="signup" style="display:none">
+      <form method="post" name="github-start" action="{{ url_for('github.authorize') }}" class="signup">
         <input alt="Sign in with GitHub"
                src="{{ url_for('static', filename='github.png') }}" type="image">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
