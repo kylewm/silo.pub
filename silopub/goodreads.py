@@ -68,7 +68,7 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        result = process_callback(callback_uri)
 
         if 'error' in result:
             flash(result['error'], category='danger')
@@ -122,12 +122,7 @@ def get_authorize_url(callback_uri):
         }))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    # goodreads doesn't have a separate authenticate endpoint
-    return get_authorize_url(callback_uri)
-
-
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     if request.args.get('authorize') != '1':
         return {'error': 'Goodreads user declined'}
 

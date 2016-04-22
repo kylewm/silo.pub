@@ -9,7 +9,7 @@ import sys
 import uuid
 import binascii
 import os
-
+from urllib.parse import urlparse
 
 SERVICES = {}
 micropub = Blueprint('micropub', __name__)
@@ -25,6 +25,7 @@ def register_service(name, service):
 @csrf.exempt
 @micropub.route('/indieauth', methods=['GET', 'POST'])
 def indieauth():
+    service = request.args.get('service')
     # verify authorization
     if request.method == 'POST':
         code = request.form.get('code')
@@ -64,13 +65,6 @@ def indieauth():
             resp.headers['IndieAuth'] = 'authorization_endpoint'
             return resp
 
-        site = Site.lookup_by_url(deproxyify(me))
-        if not site:
-            current_app.logger.warn('Auth failed, unknown site %s', me)
-            return redirect(util.set_query_params(
-                redirect_uri, error='Authorization failed. Unknown site {}'
-                .format(me)))
-
         session['indieauth_params'] = {
             'me': me,
             'redirect_uri': redirect_uri,
@@ -78,8 +72,9 @@ def indieauth():
             'state': request.args.get('state', ''),
             'scope': request.args.get('scope', ''),
         }
-        return redirect(SERVICES[site.service].get_authenticate_url(
-            url_for('.indieauth_callback', _external=True), me=me))
+
+        return redirect(SERVICES[service].get_authorize_url(
+            url_for('.indieauth_callback', service=service, _external=True), me=me))
 
     except:
         current_app.logger.exception('Starting IndieAuth')
@@ -95,6 +90,7 @@ def indieauth():
 
 @micropub.route('/indieauth/callback')
 def indieauth_callback():
+    service = request.args.get('service')
     ia_params = session.get('indieauth_params', {})
     me = ia_params.get('me')
     client_id = ia_params.get('client_id')
@@ -102,38 +98,24 @@ def indieauth_callback():
     state = ia_params.get('state', '')
     scope = ia_params.get('scope', '')
 
-    my_site = Site.lookup_by_url(deproxyify(me))
-    if not my_site:
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorization failed. Unknown site {}'.format(me)))
-
-    result = SERVICES[my_site.service].process_authenticate_callback(
+    account, error = SERVICES[service].process_callback(
         url_for('.indieauth_callback', _external=True))
-    if 'error' in result:
-        current_app.logger.warn('error on callback %s', result['error'])
+
+    if error:
+        current_app.logger.warn('error on callback %s', error)
         return redirect(
-            util.set_query_params(redirect_uri, error=result['error']))
+            util.set_query_params(redirect_uri, error=error))
 
-    current_app.logger.debug('auth callback result %s', result)
+    my_site = next((s for s in account.sites
+                    if s.domain == url_to_domain(me)), None)
 
-    # check that the authorized user owns the requested site
-    authed_account = Account.query.filter_by(
-        service=my_site.service, user_id=result['user_id']).first()
+    if not my_site:
+        error = 'Could not find site matching me {}'.format(me)
+        return redirect(
+            util.set_query_params(redirect_uri, error=error))
 
-    if not authed_account:
-        current_app.logger.warn(
-            'Auth failed, unknown account %s', result['user_id'])
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorization failed. Unknown account {}'
-            .format(result['user_id'])))
-
-    if my_site.account != authed_account:
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorized account {} does not own requested site {}'
-            .format(authed_account.username, my_site.domain)))
+    current_app.logger.debug('auth callback got account %s and site %s',
+                             account, my_site)
 
     # hand back a code to the micropub client
     code = binascii.hexlify(os.urandom(16)).decode()
@@ -245,7 +227,14 @@ def micropub_endpoint():
     return SERVICES[site.service].publish(site)
 
 
-def deproxyify(me):
-    if me and me.startswith(request.url_root):
-        return 'http://' + me[len(request.url_root):]
-    return me
+def url_to_domain(url):
+    # deproxy-ify
+    if url.startswith(request.url_root):
+        return url[len(request.url_root):]
+
+    parsed = urlparse(url)
+    domain = parsed.netloc
+    if parsed.path != '/':
+        return domain + parsed.path
+
+    return domain

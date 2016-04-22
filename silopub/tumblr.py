@@ -35,7 +35,7 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        result = process_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
@@ -74,18 +74,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    # Tumblr only has authorize, no authenticate
-    oauth = OAuth1Session(
-        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
-        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
-        callback_uri=callback_uri)
-    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
-    session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth.authorization_url(AUTHORIZE_URL)
-
-
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
     request_token = request.args.get('oauth_token')
     if not verifier or not request_token:

@@ -33,12 +33,7 @@ def authorize():
     redirect_uri = url_for('.callback', _external=True)
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
 
-    return redirect(API_AUTHORIZE_URL + '?' + urllib.parse.urlencode({
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
-        'response_type': 'code',
-        'state': generate_csrf() + '|auth',
-    }))
+    return redirect(get_authorize_url(redirect_uri))
 
 
 @wordpress.route('/wordpress/callback')
@@ -57,7 +52,7 @@ def callback():
             state=state))
 
     redirect_uri = url_for('wordpress.callback', _external=True)
-    result = process_authenticate_callback(redirect_uri)
+    result = process_callback(redirect_uri)
 
     if 'error' in result:
         flash(result['error'], category='danger')
@@ -111,19 +106,24 @@ def callback():
                             domain=site.domain))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
+def get_authorize_url(callback_uri, me=None, **kwargs):
     # wordpress.com only lets us specify one redirect_uri, so we'll ignore
     # the passed in url and redirect to it later
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
-    return API_AUTHENTICATE_URL + '?' + urllib.parse.urlencode({
+
+    params = {
         'client_id': client_id,
         'redirect_uri': url_for('wordpress.callback', _external=True),
         'response_type': 'code',
-        'state': generate_csrf() + '|id',
-    })
+        'state': generate_csrf() + '|auth',
+    }
+    if me:
+        params['blog'] = me
+
+    return API_AUTHORIZE_URL + '?' + urllib.parse.urlencode(params)
 
 
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     # ignore the callback uri because wp only lets us define one
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
     client_secret = current_app.config['WORDPRESS_CLIENT_SECRET']

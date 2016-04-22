@@ -32,17 +32,25 @@ def proxy_homepage(username):
         account = Account.query.filter_by(
             service=SERVICE_NAME, user_id=username).first()
 
-    if not account:
-        abort(404)
+    params = {
+        'service_name': 'GitHub',
+        'service_url': 'https://github.com/',
+        'service_photo': 'https://github.com/apple-touch-icon.png',
+    }
 
-    info = account.user_info or {}
-    return util.render_proxy_homepage(
-        user_name=account.username,
-        user_url=account.sites[0].url,
-        user_photo=info.get('avatar_url'),
-        service_name='GitHub',
-        service_url='https://github.com/',
-        service_photo='https://github.com/apple-touch-icon.png')
+    if account:
+        params.update({
+            'user_name': account.username,
+            'user_url': account.sites[0].url,
+            'user_photo': (account.user_info or {}).get('avatar_url')
+        })
+    else:
+        params.update({
+            'user_name': username,
+            'user_url': 'https://github.com/' + username,
+        })
+
+    return util.render_proxy_homepage(SERVICE_NAME, **params)
 
 
 @github.route('/github/authorize', methods=['POST'])
@@ -60,34 +68,14 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        account, error = process_callback(callback_uri)
 
-        if 'error' in result:
-            flash(result['error'], category='danger')
+        if error:
+            flash(error, category='danger')
             return redirect(url_for('views.index'))
 
-        account = Account.query.filter_by(
-            service='github', user_id=result['user_id']).first()
-
-        if not account:
-            account = Account(service='github', user_id=result['user_id'])
-            db.session.add(account)
-
-        account.username = result['username']
-        account.token = result['token']
-        account.user_info = result['user_info']
-
-        db.session.commit()
-        account.update_sites([GitHub(
-            url='https://github.com/{}'.format(account.username),
-            # overloading "domain" to really mean "user's canonical url"
-            domain='github.com/{}'.format(account.username),
-            site_id=account.user_id)])
-
-        db.session.commit()
         flash('Authorized {}: {}'.format(account.username, ', '.join(
             s.domain for s in account.sites)))
-        util.set_authed(account.sites)
 
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
@@ -107,26 +95,18 @@ def get_authorize_url(callback_uri, **kwargs):
     })
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    return 'https://github.com/login/oauth/authorize?' + urlencode({
-        'client_id': current_app.config['GITHUB_CLIENT_ID'],
-        'redirect_uri': callback_uri,
-        'state': generate_csrf(),
-    })
-
-
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     code = request.args.get('code')
     state = request.args.get('state')
     error = request.args.get('error')
     error_desc = request.args.get('error_description', '')
 
     if error:
-        return {'error': 'GitHub auth canceled or failed with error: {}, '
-                'description: {}'.format(error, error_desc)}
+        return (None, 'GitHub auth canceled or failed with error: {}, '
+                'description: {}'.format(error, error_desc))
 
     if not validate_csrf(state):
-        return {'error': 'csrf token mismatch in GitHub callback.'}
+        return None, 'csrf token mismatch in GitHub callback.'
 
     r = requests.post('https://github.com/login/oauth/access_token', data={
         'client_id': current_app.config['GITHUB_CLIENT_ID'],
@@ -145,12 +125,29 @@ def process_authenticate_callback(callback_uri):
     })
 
     user_info = r.json()
-    return {
-        'token': access_token,
-        'user_id': str(user_info.get('id')),
-        'username': user_info.get('login'),
-        'user_info': user_info,
-    }
+    user_id = str(user_info.get('id'))
+
+    account = Account.query.filter_by(
+        service='github', user_id=user_id).first()
+
+    if not account:
+        account = Account(service='github', user_id=user_id)
+        db.session.add(account)
+
+    account.username = user_info.get('login')
+    account.token = access_token
+    account.user_info = user_info
+
+    account.update_sites([GitHub(
+        url='https://github.com/{}'.format(account.username),
+        # overloading "domain" to really mean "user's canonical url"
+        domain='github.com/{}'.format(account.username),
+        site_id=account.user_id)])
+
+    db.session.commit()
+    util.set_authed(account.sites)
+
+    return account, None
 
 
 def publish(site):

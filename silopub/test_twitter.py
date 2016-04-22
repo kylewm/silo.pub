@@ -48,7 +48,7 @@ class TestTwitter(SiloPubTestCase):
 
     @patch('requests.get')
     @patch('requests_oauthlib.OAuth1Session.fetch_access_token')
-    def test_process_authenticate_callback(self, fetch_access_token, getter):
+    def test_process_callback(self, fetch_access_token, getter):
         with self.app.test_request_context():
             session['oauth_token_secret'] = '456'
             request.url = '/callback?oauth_token=123&oauth_verifier=789'
@@ -63,7 +63,7 @@ class TestTwitter(SiloPubTestCase):
                 'extra_info': 'Hi',
             }))
 
-            result = twitter.process_authenticate_callback(CALLBACK_URI)
+            result = twitter.process_callback(CALLBACK_URI)
             self.assertEqual({
                 'token': '123',
                 'secret': '456',

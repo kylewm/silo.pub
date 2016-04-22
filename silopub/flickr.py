@@ -77,7 +77,7 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        result = process_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
@@ -132,7 +132,7 @@ def get_authorize_url(callback_uri):
     return oauth.authorization_url(AUTHORIZE_URL, perms='write')
 
 
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
     request_token = request.args.get('oauth_token')
     if not verifier or not request_token:

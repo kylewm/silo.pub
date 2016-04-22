@@ -53,7 +53,7 @@ def authorize():
 @facebook.route('/facebook/callback')
 def callback():
     callback_uri = url_for('.callback', _external=True)
-    result = process_authenticate_callback(callback_uri)
+    result = process_callback(callback_uri)
     if 'error' in result:
         flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
@@ -83,14 +83,6 @@ def callback():
                             user_id=account.user_id))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    return 'https://www.facebook.com/dialog/oauth?' + urlencode({
-        'client_id': current_app.config['FACEBOOK_CLIENT_ID'],
-        'redirect_uri': callback_uri,
-        'state': generate_csrf(),
-    })
-
-
 def get_authorize_url(callback_uri):
     return 'https://graph.facebook.com/oauth/authorize?' + urlencode({
         'client_id': current_app.config['FACEBOOK_CLIENT_ID'],
@@ -100,7 +92,7 @@ def get_authorize_url(callback_uri):
     })
 
 
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     code = request.args.get('code')
     state = request.args.get('state')
     error = request.args.get('error')

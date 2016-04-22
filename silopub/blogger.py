@@ -32,7 +32,7 @@ def authorize():
 @blogger.route('/blogger/callback')
 def callback():
     redirect_uri = url_for('.callback', _external=True)
-    result = process_authenticate_callback(redirect_uri)
+    result = process_callback(redirect_uri)
 
     if 'error' in result:
         flash(result['error'], category='danger')
@@ -82,7 +82,7 @@ def callback():
                             user_id=account.user_id))
 
 
-def get_authorize_url(redirect_uri):
+def get_authorize_url(redirect_uri, **kwargs):
     csrf_token = generate_csrf()
     return API_AUTH_URL + '?' + urllib.parse.urlencode({
         'response_type': 'code',
@@ -95,18 +95,7 @@ def get_authorize_url(redirect_uri):
     })
 
 
-def get_authenticate_url(redirect_uri, **kwargs):
-    csrf_token = generate_csrf()
-    return API_AUTH_URL + '?' + urllib.parse.urlencode({
-        'response_type': 'code',
-        'client_id': current_app.config['GOOGLE_CLIENT_ID'],
-        'redirect_uri': redirect_uri,
-        'scope': BLOGGER_SCOPE,
-        'state': csrf_token,
-    })
-
-
-def process_authenticate_callback(redirect_uri):
+def process_callback(redirect_uri):
     code = request.args.get('code')
     error = request.args.get('error')
 
