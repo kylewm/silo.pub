@@ -14,434 +14,515 @@
       <li><a href="#vocab-blogger">Blogger</a></li>
       <li><a href="#vocab-twitter">Twitter</a></li>
       <li><a href="#vocab-facebook">Facebook</a></li>
+      <li><a href="#vocab-github">GitHub</a></li>
       <li><a href="#vocab-goodreads">Goodreads</a></li>
     </ul>
 
-
-    <h2 id="micropub">Micropub</h2>
-    <p>
-      <a href="https://indiewebcamp.com/Micropub">Micropub</a> is an
-      open API standard that describes a protocol for publishing to a
-      personal website. The protocol includes OAuth2-style authorization,
-      using your website's URL as your ID.
-    </p>
-    <p>
-      silo.pub exposes a micropub endpoint so you can use this
-      protocol and vocabulary to publish to many different hosted
-      services like Blogger and Twitter. If you are
-      <a href="https://indiewebcamp.com/POSSE">POSSEing</a> to many
-      different services, silo.pub might save you the trouble of
-      writing special code for each unique API.
-    </p>
-
-    <h2 id="post">Creating a Post</h2>
-
-    <p>
-      After obtaining an access token, create a new entry on a service by
-      sending a POST request to silo.pub's Micropub endpoint
-      (<code>{{url_for('micropub.micropub_endpoint', _external=True)}}</code>)
-      with a x-www-form-urlencoded string (or multipart/form-data if attaching
-      media). All requests must include the access token either as a form field:
-    </p>
-    <pre>access_token=xxxxxxxxx</pre>
-    <p>
-      or an Authorization header
-    </p>
-    <pre>Authorization: Bearer xxxxxxxxx</pre>.
-
-    <p>
-      The following sections list the parameters that each service
-      supports. Most posts will include at least
-      a <code>content</code>. Many properties can be multivalued by
-      specifying e.g. <code>category[]</code> instead
-      of <code>category</code> (note that multi-valued properties must
-      use the array syntax). Currently only photos and video must be
-      uploaded as files. In the future we'll support posting media by
-      URL too. Most properties are optional.
-    </p>
-
-    <h3 id="vocab-tumblr">Tumblr</h3>
-
-    <table class="table table-striped">
-      <tr>
-        <td>slug</td>
-        <td>optional custom slug for your post</td>
-      </tr>
-
-      <tr>
-        <td>name</td>
-        <td>post title</td>
-      </tr>
-
-      <tr>
-        <td>content[html] or content</td>
-        <td>body of the post</td>
-      </tr>
-
-      <tr>
-        <td>summary</td>
-        <td>if content is not provided, summary will be used as the body</td>
-      </tr>
-
-      <tr>
-        <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted
-        html in the body of your post with class="u-in-reply-to"</td>
-      </tr>
-
-      <tr>
-        <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted
-        html link in the body of your post with class="repost-of". A
-        planned future version will support native Tumblr
-        reblogging</td>
-      </tr>
-
-      <tr>
-        <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-like-of"</td>
-      </tr>
-
-      <tr>
-        <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-bookmark-of"</td>
-      </tr>
-
-      <tr>
-        <td>photo</td>
-        <td>(file) if provided, creates a "photo" post with a caption
-        based on content (or name or summary)</td>
-      </tr>
-
-    </table>
-
-    <h3 id="vocab-wordpress">Wordpress.com</h3>
-
-    <table class="table table-striped">
-      <tr>
-        <td>slug</td>
-        <td>optional custom slug for your post</td>
-      </tr>
-      <tr>
-        <td>name</td>
-        <td>post title</td>
-      </tr>
-      <tr>
-        <td>summary</td>
-        <td>passed to Wordpress as the "excerpt"</td>
-      </tr>
-      <tr>
-        <td>content[html] or content</td>
-        <td>body of the post</td>
-      </tr>
-      <tr>
-        <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted
-        html in the body of your post with class="u-in-reply-to"</td>
-      </tr>
-      <tr>
-        <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted
-        html link in the body of your post with class="repost-of"</td>
-      </tr>
-      <tr>
-        <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-like-of"</td>
-      </tr>
-      <tr>
-        <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-bookmark-of"</td>
-      </tr>
-      <tr>
-        <td>photo</td>
-        <td>(file) uploads a single photo as an attachment using the
-        Wordpress property <code>media</code></td>
-      </tr>
-
-    </table>
-
-    <h3 id="vocab-blogger">Blogger</h3>
-
-    <table class="table table-striped">
-      <tr>
-        <td>name</td>
-        <td>post title</td>
-      </tr>
-      <tr>
-        <td>content[html] or content</td>
-        <td>body of the post</td>
-      </tr>
-      <tr>
-        <td>in-reply-to</td>
-        <td>a URL to reply to. This will embed custom microformatted
-        html in the body of your post with class="u-in-reply-to"</td>
-      </tr>
-      <tr>
-        <td>repost-of</td>
-        <td>at this time, this just embeds a custom microformatted
-        html link in the body of your post with class="repost-of"</td>
-      </tr>
-      <tr>
-        <td>like-of</td>
-        <td>a URL to post an indie like of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-like-of"</td>
-      </tr>
-      <tr>
-        <td>bookmark-of</td>
-        <td>a URL to post an indie bookmark of. This will embed custom
-        microformatted html in the body of your post with
-        class="u-bookmark-of"</td>
-      </tr>
-    </table>
-
-    <h3 id="vocab-twitter">Twitter</h3>
-
-    <h4>Tweet</h4>
-
-    <table class="table table-striped">
-      <tr>
-        <td>url</td>
-        <td>Permalink of the original post, useful for syndicating to
-        Twitter. If the content must be truncated to fit in a tweet,
-        this link will be appended. Otherwise, it is ignored.</td>
-      </tr>
-      <tr>
-        <td>name</td>
-        <td>title of an article. If provided, this supersedes the content,
-        and implies a different formatting: "Article Title: url".
-        Unlike the note case, <code>url</code> will be included even if the
-        <code>name</code> is much shorter than the character limit.</td>
-      </tr>
-      <tr>
-        <td>content[value] or content</td>
-        <td>text of the note. If this is longer than 140 characters
-        (assuming t.co wrapping), silo.pub will automatically truncate
-        the content and include <code>url</code> (if provided)</td>
-      </tr>
-      <tr>
-        <td>in-reply-to</td>
-        <td>URL of a tweet to reply to. If the repliee is not the
-        currently authorized user, and the post content does not
-        include the @-name of the repliee, it will automatically be
-        prepended to the string (otherwise Twitter does not recognize
-        it as a reply). Use in-reply-to[] to pass multiple
-        values &mdash; We'll use the first one that looks like a tweet
-        permalink.</td>
-      </tr>
-      <tr>
-        <td>location</td>
-        <td>A Geo URI specifying latitude and longitude,
-        e.g. <code>geo:37.7458887,-119.5333317</code>. (additional
-        properties of the URI are ignored).</td>
-      </tr>
-      <tr>
-        <td>photo</td>
-        <td>(file) Attach a photo to the tweet. Up to 4 photos can be
-        attached using the array syntax
-        (<code>photo[]</code>). Twitter documentation says images can
-        be up to 5MB, but it seems to complain about anything over
-        3MB. Note that this reduces the number of allowed characters
-        in the post content in order to fit the URL of the image.</td>
-      </tr>
-      <tr>
-        <td>video</td>
-        <td>(file) Attach a single video to the tweet. The video must
-        be in MP4 format and can be up to 15MB. Note that this reduces the
-        number of allowed characters in the post content.</td>
-      </tr>
-    </table>
-
-    <h4>Retweet</h4>
-
-    <table class="table table-striped">
-      <tr>
-        <td>repost-of</td>
-        <td>URL of a tweet to retweet. If specified, all other fields
-        are ignored. Multiple values are allowed with repost-of[]
-        &mdash; We'll use the first one that looks like a tweet
-        permalink.</td>
-      </tr>
-    </table>
-
-    <h4>Like</h4>
-
-    <table class="table table-striped">
-      <tr>
-        <td>like-of</td>
-        <td>URL of a tweet to like. If specified, all other fields are
-        ignored. Multiple values are allowed with like-of[] &mdash;
-        We'll use the first one that looks like a tweet
-        permalink.</td>
-      </tr>
-    </table>
-
-    <h3 id="vocab-facebook">Facebook</h3>
-
-    <div class="alert alert-warning">
-      Unfortunately, Facebook's
-      API <a href="http://stackoverflow.com/questions/28337331/facebook-graph-api-find-graph-object-from-post-url">makes
-      it prohibitively difficult</a> to find the Graph ID of a post
-      from its URL, so replying to, sharing, and liking Facebook posts
-      are not supported by silo.pub. I'm open to any ideas for
-      workarounds.
+    <div class="section">
+      <h2 id="micropub">Micropub</h2>
+      <p>
+        <a href="https://indiewebcamp.com/Micropub">Micropub</a> is an
+        open API standard that describes a protocol for publishing to a
+        personal website. The protocol includes OAuth2-style authorization,
+        using your website's URL as your ID.
+      </p>
+      <p>
+        silo.pub exposes a micropub endpoint so you can use this
+        protocol and vocabulary to publish to many different hosted
+        services like Blogger and Twitter. If you are
+        <a href="https://indiewebcamp.com/POSSE">POSSEing</a> to many
+        different services, silo.pub might save you the trouble of
+        writing special code for each unique API.
+      </p>
     </div>
 
-    <table class="table table-striped">
-      <tr>
-        <td>name</td>
-        <td>title of an article. If name and content are provided,
-        then silo.pub will post the full text. Note that "name" and
-        "photo" are mutually exclusive (because articles are not
-        photos) &mdash; If "name" is specified, then "photo" is ignored.</td>
-      </tr>
-      <tr>
-        <td>content[value] or content</td>
-        <td>text of the post. For note posts, silo.pub grabs the first
-        link from the post content (if there are any) and uses it as
-        the link preview.</td>
-      </tr>
-      <tr>
-        <td>url</td>
-        <td>Permalink of the original post, useful when syndicating to
-        Facebook. If this looks like an "article" (i.e. it has an
-        explicit "name") then the permalink will be included as a link
-        preview. If this looks more like a "note", then it will be
-        included in parentheses in the body of the status update.</td>
-      </tr>
-      <tr>
-        <td>location</td>
-        <td>Either a numeric Facebook place ID or a Geo URI expressing
-        latitude and longitude. Given a lat/long, we'll searh Facebook
-        for places near this point. If we fails to find a match in the
-        Facebook database, publishing will proceed normally, without a
-        place.</td>
-      </tr>
-      <tr>
-        <td>place-name</td>
-        <td>Use this name to narrow down the search for a Facebook
-        place. It doesn't have to be an exact match for the name in
-        the Facebook database, but an overly specific name might
-        prevent the API from finding anything.</td>
-      </tr>
-      <tr>
-        <td>photo</td>
-        <td>(file) If provided, post a photo. <code>content</code>
-        will become the photo's "caption". <code>name</code> is
-        ignored.</td>
-      </tr>
-      <tr>
-        <td>video</td>
-        <td>(file) If provided, post a video. <code>name</code> will
-        be the title, and <code>content</code> will be the description
-        (note the difference with photos, which have only a caption).
-      </tr>
-    </table>
+    <div class="section">
+      <h2 id="post">Creating a Post</h2>
 
-    <h3 id="vocab-flickr">Flickr</h3>
+      <p>
+        After obtaining an access token, create a new entry on a service by
+        sending a POST request to silo.pub's Micropub endpoint
+        (<code>{{url_for('micropub.micropub_endpoint', _external=True)}}</code>)
+        with a x-www-form-urlencoded string (or multipart/form-data if attaching
+        media). All requests must include the access token either as a form field:
+      </p>
+      <pre>access_token=xxxxxxxxx</pre>
+      <p>
+        or an Authorization header
+      </p>
+      <pre>Authorization: Bearer xxxxxxxxx</pre>.
 
-    <h4>Photo (or Video)</h4>
+      <p>
+        The following sections list the parameters that each service
+        supports. Most posts will include at least
+        a <code>content</code>. Many properties can be multivalued by
+        specifying e.g. <code>category[]</code> instead
+        of <code>category</code> (note that multi-valued properties must
+        use the array syntax). Currently only photos and video must be
+        uploaded as files. In the future we'll support posting media by
+        URL too. Most properties are optional.
+      </p>
+    </div>
 
-    <table class="table table-striped">
-      <tr>
-        <td>name</td>
-        <td>Photo title</td>
-      </tr>
-      <tr>
-        <td>content[value] or content</td>
-        <td>Photo description (optional)</td>
-      </tr>
-      <tr>
-        <td>photo</td>
-        <td>(file) required unless video is provided. This is the photo to upload to Flickr.</td>
-      </tr>
-      <tr>
-        <td>video</td>
-        <td>(file) This is a video to upload to Flickr.</td>
-      </tr>
-      <tr>
-        <td>category</td>
-        <td>One or more tags to apply to the photo. If a category is
-          the URL to a user's profile or photostream, then this will
-          be converted to
-          a <a href="https://indiewebcamp.com/person-tag">person
-          tag</a> instead of a regular tag. To specify multiple
-          categories, remember to use the array
-          syntax, <code>category[]=</code>.
-        </td>
-      </tr>
-      <tr>
-        <td>location</td>
-        <td>a Geo URI specifying the latitude and longitude where the
-        photo was taken, e.g. <code>geo:39.3085532,-123.8105919</code>.</td>
-    </table>
+    <div class="section">
+      <h3 id="vocab-tumblr">Tumblr</h3>
 
-    <h4>Comment</h4>
+      <table class="table table-striped">
+        <tr>
+          <td>slug</td>
+          <td>optional custom slug for your post</td>
+        </tr>
 
-    <table class="table table-striped">
-      <tr>
-        <td>content[value] or content</td>
-        <td>Text of the comment</td>
-      </tr>
-      <tr>
-        <td>in-reply-to</td>
-        <td>URL of the photo on which to comment.</td>
-      </tr>
-    </table>
+        <tr>
+          <td>name</td>
+          <td>post title</td>
+        </tr>
 
-    <h4>Favorite</h4>
+        <tr>
+          <td>content[html] or content</td>
+          <td>body of the post</td>
+        </tr>
 
-    <table class="table table-striped">
-      <tr>
-        <td>like-of</td>
-        <td>URL of the photo to favorite.</td>
-      </tr>
-    </table>
+        <tr>
+          <td>summary</td>
+          <td>if content is not provided, summary will be used as the body</td>
+        </tr>
 
-    Note: The Location header of the response will be the URL of the
-    photo itself, since faves don't have their own URL.
+        <tr>
+          <td>in-reply-to</td>
+          <td>a URL to reply to. This will embed custom microformatted
+            html in the body of your post with class="u-in-reply-to"</td>
+        </tr>
 
-    <h3 id="vocab-goodreads">Goodreads</h3>
+        <tr>
+          <td>repost-of</td>
+          <td>at this time, this just embeds a custom microformatted
+            html link in the body of your post with class="repost-of". A
+            planned future version will support native Tumblr
+            reblogging</td>
+        </tr>
 
-    <h4>Review</h4>
+        <tr>
+          <td>like-of</td>
+          <td>a URL to post an indie like of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-like-of"</td>
+        </tr>
 
-    <table class="table table-striped">
+        <tr>
+          <td>bookmark-of</td>
+          <td>a URL to post an indie bookmark of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-bookmark-of"</td>
+        </tr>
 
-      <tr>
-        <td>item</td>
-        <td>The Goodreads URL, ISBN number, or simply the title (with or without author) of the book. We'll pull the Goodreads ID from the URL if it's given, or otherwise use the <a href="https://www.goodreads.com/api/index#search.books">Goodreads search API</a> to find the book.</td>
-      </tr>
-      <tr>
-        <td>description[value]<br/>
-          or description<br/>
-          or content[value]<br/>
-          or content<br/>
-          or summary<br/>
-          or name</td>
-        <td>Optional. A descriptive review of the book.</td>
-      </tr>
-      <tr>
-        <td>rating</td>
-        <td>Optional. A rating 1 to 5, where 5 is the highest rating.</td>
-      </tr>
-      <tr>
-        <td>category</td>
-        <td>One or more shelves to add this book to. Shelves that do not already exist for this user will be ignored.</td>
-      </tr>
-    </table>
+        <tr>
+          <td>photo</td>
+          <td>(file) if provided, creates a "photo" post with a caption
+            based on content (or name or summary)</td>
+        </tr>
 
-    <h4>Comments</h4>
+      </table>
 
-    TODO!
+    </div>
+    <div class="section">
 
+      <h3 id="vocab-wordpress">Wordpress.com</h3>
+
+      <table class="table table-striped">
+        <tr>
+          <td>slug</td>
+          <td>optional custom slug for your post</td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td>post title</td>
+        </tr>
+        <tr>
+          <td>summary</td>
+          <td>passed to Wordpress as the "excerpt"</td>
+        </tr>
+        <tr>
+          <td>content[html] or content</td>
+          <td>body of the post</td>
+        </tr>
+        <tr>
+          <td>in-reply-to</td>
+          <td>a URL to reply to. This will embed custom microformatted
+            html in the body of your post with class="u-in-reply-to"</td>
+        </tr>
+        <tr>
+          <td>repost-of</td>
+          <td>at this time, this just embeds a custom microformatted
+            html link in the body of your post with class="repost-of"</td>
+        </tr>
+        <tr>
+          <td>like-of</td>
+          <td>a URL to post an indie like of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-like-of"</td>
+        </tr>
+        <tr>
+          <td>bookmark-of</td>
+          <td>a URL to post an indie bookmark of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-bookmark-of"</td>
+        </tr>
+        <tr>
+          <td>photo</td>
+          <td>(file) uploads a single photo as an attachment using the
+            Wordpress property <code>media</code></td>
+        </tr>
+
+      </table>
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-blogger">Blogger</h3>
+
+      <table class="table table-striped">
+        <tr>
+          <td>name</td>
+          <td>post title</td>
+        </tr>
+        <tr>
+          <td>content[html] or content</td>
+          <td>body of the post</td>
+        </tr>
+        <tr>
+          <td>in-reply-to</td>
+          <td>a URL to reply to. This will embed custom microformatted
+            html in the body of your post with class="u-in-reply-to"</td>
+        </tr>
+        <tr>
+          <td>repost-of</td>
+          <td>at this time, this just embeds a custom microformatted
+            html link in the body of your post with class="repost-of"</td>
+        </tr>
+        <tr>
+          <td>like-of</td>
+          <td>a URL to post an indie like of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-like-of"</td>
+        </tr>
+        <tr>
+          <td>bookmark-of</td>
+          <td>a URL to post an indie bookmark of. This will embed custom
+            microformatted html in the body of your post with
+            class="u-bookmark-of"</td>
+        </tr>
+      </table>
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-twitter">Twitter</h3>
+
+      <h4>Tweet</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>url</td>
+          <td>Permalink of the original post, useful for syndicating to
+            Twitter. If the content must be truncated to fit in a tweet,
+            this link will be appended. Otherwise, it is ignored.</td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td>title of an article. If provided, this supersedes the content,
+            and implies a different formatting: "Article Title: url".
+            Unlike the note case, <code>url</code> will be included even if the
+            <code>name</code> is much shorter than the character limit.</td>
+        </tr>
+        <tr>
+          <td>content[value] or content</td>
+          <td>text of the note. If this is longer than 140 characters
+            (assuming t.co wrapping), silo.pub will automatically truncate
+            the content and include <code>url</code> (if provided)</td>
+        </tr>
+        <tr>
+          <td>in-reply-to</td>
+          <td>URL of a tweet to reply to. If the repliee is not the
+            currently authorized user, and the post content does not
+            include the @-name of the repliee, it will automatically be
+            prepended to the string (otherwise Twitter does not recognize
+            it as a reply). Use in-reply-to[] to pass multiple
+            values &mdash; We'll use the first one that looks like a tweet
+            permalink.</td>
+        </tr>
+        <tr>
+          <td>location</td>
+          <td>A Geo URI specifying latitude and longitude,
+            e.g. <code>geo:37.7458887,-119.5333317</code>. (additional
+            properties of the URI are ignored).</td>
+        </tr>
+        <tr>
+          <td>photo</td>
+          <td>(file) Attach a photo to the tweet. Up to 4 photos can be
+            attached using the array syntax
+            (<code>photo[]</code>). Twitter documentation says images can
+            be up to 5MB, but it seems to complain about anything over
+            3MB. Note that this reduces the number of allowed characters
+            in the post content in order to fit the URL of the image.</td>
+        </tr>
+        <tr>
+          <td>video</td>
+          <td>(file) Attach a single video to the tweet. The video must
+            be in MP4 format and can be up to 15MB. Note that this reduces the
+            number of allowed characters in the post content.</td>
+        </tr>
+      </table>
+
+      <h4>Retweet</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>repost-of</td>
+          <td>URL of a tweet to retweet. If specified, all other fields
+            are ignored. Multiple values are allowed with repost-of[]
+            &mdash; We'll use the first one that looks like a tweet
+            permalink.</td>
+        </tr>
+      </table>
+
+      <h4>Like</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>like-of</td>
+          <td>URL of a tweet to like. If specified, all other fields are
+            ignored. Multiple values are allowed with like-of[] &mdash;
+            We'll use the first one that looks like a tweet
+            permalink.</td>
+        </tr>
+      </table>
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-facebook">Facebook</h3>
+
+      <div class="alert alert-warning">
+        Unfortunately, Facebook's
+        API <a href="http://stackoverflow.com/questions/28337331/facebook-graph-api-find-graph-object-from-post-url">makes
+        it prohibitively difficult</a> to find the Graph ID of a post
+        from its URL, so replying to, sharing, and liking Facebook posts
+        are not supported by silo.pub. I'm open to any ideas for
+        workarounds.
+      </div>
+
+      <table class="table table-striped">
+        <tr>
+          <td>name</td>
+          <td>title of an article. If name and content are provided,
+            then silo.pub will post the full text. Note that "name" and
+            "photo" are mutually exclusive (because articles are not
+            photos) &mdash; If "name" is specified, then "photo" is ignored.</td>
+        </tr>
+        <tr>
+          <td>content[value] or content</td>
+          <td>text of the post. For note posts, silo.pub grabs the first
+            link from the post content (if there are any) and uses it as
+            the link preview.</td>
+        </tr>
+        <tr>
+          <td>url</td>
+          <td>Permalink of the original post, useful when syndicating to
+            Facebook. If this looks like an "article" (i.e. it has an
+            explicit "name") then the permalink will be included as a link
+            preview. If this looks more like a "note", then it will be
+            included in parentheses in the body of the status update.</td>
+        </tr>
+        <tr>
+          <td>location</td>
+          <td>Either a numeric Facebook place ID or a Geo URI expressing
+            latitude and longitude. Given a lat/long, we'll searh Facebook
+            for places near this point. If we fails to find a match in the
+            Facebook database, publishing will proceed normally, without a
+            place.</td>
+        </tr>
+        <tr>
+          <td>place-name</td>
+          <td>Use this name to narrow down the search for a Facebook
+            place. It doesn't have to be an exact match for the name in
+            the Facebook database, but an overly specific name might
+            prevent the API from finding anything.</td>
+        </tr>
+        <tr>
+          <td>photo</td>
+          <td>(file) If provided, post a photo. <code>content</code>
+            will become the photo's "caption". <code>name</code> is
+            ignored.</td>
+        </tr>
+        <tr>
+          <td>video</td>
+          <td>(file) If provided, post a video. <code>name</code> will
+            be the title, and <code>content</code> will be the description
+            (note the difference with photos, which have only a caption).
+        </tr>
+      </table>
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-flickr">Flickr</h3>
+
+      <h4>Photo (or Video)</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>name</td>
+          <td>Photo title</td>
+        </tr>
+        <tr>
+          <td>content[value] or content</td>
+          <td>Photo description (optional)</td>
+        </tr>
+        <tr>
+          <td>photo</td>
+          <td>(file) required unless video is provided. This is the photo to upload to Flickr.</td>
+        </tr>
+        <tr>
+          <td>video</td>
+          <td>(file) This is a video to upload to Flickr.</td>
+        </tr>
+        <tr>
+          <td>category</td>
+          <td>One or more tags to apply to the photo. If a category is
+            the URL to a user's profile or photostream, then this will
+            be converted to
+            a <a href="https://indiewebcamp.com/person-tag">person
+            tag</a> instead of a regular tag. To specify multiple
+            categories, remember to use the array
+            syntax, <code>category[]=</code>.
+          </td>
+        </tr>
+        <tr>
+          <td>location</td>
+          <td>a Geo URI specifying the latitude and longitude where the
+            photo was taken, e.g. <code>geo:39.3085532,-123.8105919</code>.</td>
+      </table>
+
+      <h4>Comment</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>content[value] or content</td>
+          <td>Text of the comment</td>
+        </tr>
+        <tr>
+          <td>in-reply-to</td>
+          <td>URL of the photo on which to comment.</td>
+        </tr>
+      </table>
+
+      <h4>Favorite</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>like-of</td>
+          <td>URL of the photo to favorite.</td>
+        </tr>
+      </table>
+
+      Note: The Location header of the response will be the URL of the
+      photo itself, since faves don't have their own URL.
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-github">GitHub</h3>
+
+      <h4>Creating an Issue</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>in-reply-to</td>
+          <td>the GitHub repository URL (the repository plus /issues is also accepted)</td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td>Plain-text title of the issue. Try to keep these around 50 characters</td>
+        </tr>
+        <tr>
+          <td>content[markdown]<br/>
+            content[value]<br/>
+            or content
+          </td>
+          <td>Markdown description of the issue.</td>
+        </tr>
+        <tr>
+          <td>category</td>
+          <td>One or more labels to apply to the issue (note that only
+            project committers can apply labels. Remember to use
+            the <code>category[]</code> syntax to apply multiple
+            labels.</td>
+        </tr>
+      </table>
+
+      <h4>Commenting on an Issue or Pull Request</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>in-reply-to</td>
+          <td>the GitHub issue or pull request URL (e.g. https://github.com/kylewm/issues/1)
+        </tr>
+        <tr>
+          <td>content[markdown]<br/>
+            content[value]<br/>
+            or content
+          </td>
+          <td>Markdown-formatted content of the comment.</td>
+        </tr>
+      </table>
+
+      <h4>Star a Repository</h4>
+
+      <table class="table table-striped">
+        <tr>
+          <td>like-of</td>
+          <td>the GitHub repository URL</td>
+        </tr>
+      </table>
+
+    </div>
+    <div class="section">
+
+      <h3 id="vocab-goodreads">Goodreads</h3>
+
+      <h4>Review</h4>
+
+      <table class="table table-striped">
+
+        <tr>
+          <td>item</td>
+          <td>The Goodreads URL, ISBN number, or simply the title (with or without author) of the book. We'll pull the Goodreads ID from the URL if it's given, or otherwise use the <a href="https://www.goodreads.com/api/index#search.books">Goodreads search API</a> to find the book.</td>
+        </tr>
+        <tr>
+          <td>description[value]<br/>
+            or description<br/>
+            or content[value]<br/>
+            or content<br/>
+            or summary<br/>
+            or name</td>
+            <td>Optional. A descriptive review of the book.</td>
+        </tr>
+        <tr>
+          <td>rating</td>
+          <td>Optional. A rating 1 to 5, where 5 is the highest rating.</td>
+        </tr>
+        <tr>
+          <td>category</td>
+          <td>One or more shelves to add this book to. Shelves that do not already exist for this user will be ignored.</td>
+        </tr>
+      </table>
+
+      <h4>Comments</h4>
+
+      TODO!
+
+    </div>
   </div>
 
 {% endblock %}

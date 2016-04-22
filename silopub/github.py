@@ -169,7 +169,9 @@ def publish(site):
                 repo_match.group(1), repo_match.group(2))
 
             title = request.form.get('name')
-            body = request.form.get('content[value]') or request.form.get('content') or ''
+            body = (request.form.get('content[markdown]')
+                    or request.form.get('content[value]')
+                    or request.form.get('content') or '')
 
             if not title and body:
                 title = body[:49] + '\u2026'
@@ -177,17 +179,16 @@ def publish(site):
             data = {
                 'title': title,
                 'body': body,
-                'labels': request.form.getlist('category[]')
-                or request.form.getlist('category'),
+                'labels': util.get_possible_array_value('category'),
             }
         # reply to an issue -- post a new comment
         elif issue_match:
             endpoint = 'https://api.github.com/repos/{}/{}/issues/{}/comments'.format(
                 issue_match.group(1), issue_match.group(2), issue_match.group(3))
-            data = {
-                'body': request.form.get('content[value]')
-                or request.form.get('content')
-            }
+            body = (request.form.get('content[markdown]')
+                    or request.form.get('content[value]')
+                    or request.form.get('content') or '')
+            data = {'body': body}
         else:
             return util.make_publish_error_response(
                 'Reply URL does look like a repo or issue: ' + in_reply_to)
