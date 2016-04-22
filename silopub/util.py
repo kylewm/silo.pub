@@ -153,16 +153,17 @@ def render_proxy_homepage(user_name, user_url, user_photo,
         <link rel="micropub" href="{micropub}">
         <link rel="me" href="{user_url}">
         <link href="{service_photo}" rel="shortcut icon">
+        <style>img {{ max-height: 4em; }}</style>
     </head>
     <body>
         Micropub proxy for
         <div class="h-x-syndication-target">
-          <a class="p-user h-card" href="user_url">
+          <a class="p-user h-card" href="{user_url}">
             <img src="{user_photo}" alt="" />
             {user_name}
           </a>
           on
-          <a class="p-service h-card" href="service_url">
+          <a class="p-service h-card" href="{service_url}">
             <img src="{service_photo}" alt="" />
             {service_name}
           </a>
