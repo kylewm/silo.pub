@@ -279,15 +279,16 @@ def publish(site):
         return util.wrap_silo_error_response(r)
 
     resp_data = r.json()
+    userid = ''
     fbid = resp_data.get('id') or resp_data.get('post_id')
 
     split = fbid.split('_')
     if len(split) == 2:
-        fbid = split[1]
+        userid, fbid = split
 
     return util.make_publish_success_response(
         'https://www.facebook.com/{}/{}/{}'.format(
-            site.account.username, fburl_separator, fbid),
+            site.account.username or userid, fburl_separator, fbid),
         data=resp_data)
 
 

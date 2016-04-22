@@ -107,7 +107,7 @@ def callback():
                                 user_id=account.user_id))
 
     except:
-        current_app.logger.exception('During Tumblr authorization callback')
+        current_app.logger.exception('During Flickr authorization callback')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
 

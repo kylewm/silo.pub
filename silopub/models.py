@@ -215,6 +215,15 @@ class Flickr(Site):
         return 'Flickr[username={}]'.format(self.site_id)
 
 
+class GitHub(Site):
+    __mapper_args__ = {
+        'polymorphic_identity': 'github'
+    }
+
+    def __repr__(self):
+        return 'GitHub[username={}]'.format(self.site_id)
+
+
 class Goodreads(Site):
     __mapper_args__ = {
         'polymorphic_identity': 'goodreads'
