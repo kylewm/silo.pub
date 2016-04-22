@@ -13,8 +13,9 @@ import re
 SERVICE_NAME = 'github'
 PERMISSION_SCOPES = 'repo'
 
-BASE_PATTERN = 'https?://(?:www\.)github\.com/([a-zA-Z0-9_.]+)/([a-zA-Z0-9_.]+)/?'
+BASE_PATTERN = 'https?://(?:www\.)?github\.com/([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)/?'
 REPO_PATTERN = BASE_PATTERN + '(?:#|$)'
+ISSUES_PATTERN = BASE_PATTERN + '/issues/?(?:#|$)'
 ISSUE_PATTERN = BASE_PATTERN + '/issues/(\d+)/?(?:#|$)'
 PULL_PATTERN = BASE_PATTERN + '/pull/(\d+)/?(?:#|$)'
 
@@ -107,7 +108,7 @@ def get_authorize_url(callback_uri, **kwargs):
 
 
 def get_authenticate_url(callback_uri, **kwargs):
-    return 'https://github.com/login/oauth/authenticate?' + urlencode({
+    return 'https://github.com/login/oauth/authorize?' + urlencode({
         'client_id': current_app.config['GITHUB_CLIENT_ID'],
         'redirect_uri': callback_uri,
         'state': generate_csrf(),
@@ -146,36 +147,42 @@ def process_authenticate_callback(callback_uri):
     user_info = r.json()
     return {
         'token': access_token,
-        'user_id': user_info.get('id'),
+        'user_id': str(user_info.get('id')),
         'username': user_info.get('login'),
         'user_info': user_info,
     }
 
 
 def publish(site):
+    auth_headers = {'Authorization': 'token ' + site.account.token}
+
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:
-        data = {}
-        auth_headers = {'Authorization': 'token ' + site.account.token}
-
-        repo_match = re.match(REPO_PATTERN, in_reply_to)
+        repo_match = (re.match(REPO_PATTERN, in_reply_to)
+                      or re.match(ISSUES_PATTERN, in_reply_to))
         issue_match = (re.match(ISSUE_PATTERN, in_reply_to)
                        or re.match(PULL_PATTERN, in_reply_to))
 
         # reply to a repository -- post a new issue
         if repo_match:
-            endpoint = 'https://api.github.com/{}/{}/issues'.format(
+            endpoint = 'https://api.github.com/repos/{}/{}/issues'.format(
                 repo_match.group(1), repo_match.group(2))
+
+            title = request.form.get('name')
+            body = request.form.get('content[value]') or request.form.get('content') or ''
+
+            if not title and body:
+                title = body[:49] + '\u2026'
+
             data = {
-                'title': request.form.get('name'),
-                'body': request.form.get('content[value]')
-                or request.form.get('content'),
+                'title': title,
+                'body': body,
                 'labels': request.form.getlist('category[]')
                 or request.form.getlist('category'),
             }
         # reply to an issue -- post a new comment
         elif issue_match:
-            endpoint = 'https://api.github.com/{}/{}/issues/{}/comments'.format(
+            endpoint = 'https://api.github.com/repos/{}/{}/issues/{}/comments'.format(
                 issue_match.group(1), issue_match.group(2), issue_match.group(3))
             data = {
                 'body': request.form.get('content[value]')
@@ -185,6 +192,7 @@ def publish(site):
             return util.make_publish_error_response(
                 'Reply URL does look like a repo or issue: ' + in_reply_to)
 
+        current_app.logger.debug('sending POST to %s with data %s', endpoint, data)
         r = requests.post(endpoint, json=data, headers=auth_headers)
 
         if r.status_code // 100 != 2:
@@ -192,21 +200,22 @@ def publish(site):
 
         resp_json = r.json()
         return util.make_publish_success_response(
-            resp_json.get('url'), resp_json)
+            resp_json.get('html_url'), resp_json)
 
     # like a repository -- star the repository
     like_of = request.form.get('like-of')
     if like_of:
         repo_match = re.match(REPO_PATTERN, like_of)
         if repo_match:
-            r = requests.put('https://api.github.com/user/starred/{}/{}'
-                             .format(repo_match.group(1), repo_match.group(2)),
-                             headers=auth_headers)
+            endpoint = 'https://api.github.com/user/starred/{}/{}'.format(
+                repo_match.group(1), repo_match.group(2))
+            current_app.logger.debug('sending PUT to %s', endpoint)
+            r = requests.put(endpoint, headers=auth_headers)
 
             if r.status_code // 100 != 2:
                 return util.wrap_silo_error_response(r)
 
-            return util.wrap_silo_success_response(
+            return util.make_publish_success_response(
                 like_of + '#starred-by-' + site.account.username)
 
         else:
