@@ -4,6 +4,7 @@ import re
 import urllib.parse
 
 from flask import flash, current_app, make_response, url_for, jsonify, session
+from flask import request
 from requests.exceptions import HTTPError, SSLError
 import jwt
 import mf2py
@@ -140,8 +141,8 @@ def posse_post_discovery(original, regex):
         current_app.logger.exception('MF2 Parser error: %s', e)
 
 
-def render_proxy_homepage(user_name, user_url, user_photo,
-                          service_name, service_url, service_photo):
+def render_proxy_homepage(user_name='', user_url='', user_photo='',
+                          service_name='', service_url='', service_photo=''):
     # TODO make endpoints visible because why not
     return """
 <!DOCTYPE html>

@@ -35,36 +35,13 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        result = process_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
-
-        account = Account.query.filter_by(
-            service='tumblr', user_id=result['user_id']).first()
-
-        if not account:
-            account = Account(service='tumblr', user_id=result['user_id'])
-            db.session.add(account)
-
-        account.username = result['username']
-        account.user_info = result['user_info']
-        account.token = result['token']
-        account.token_secret = result['secret']
-
-        sites = []
-        for blog in result['user_info'].get('blogs', []):
-            sites.append(Tumblr(
-                url=blog.get('url'),
-                domain=util.domain_for_url(blog.get('url')),
-                site_id=blog.get('name'),
-                site_info=blog))
-        account.update_sites(sites)
-
-        db.session.commit()
+        account = result['account']
         flash('Authorized {}: {}'.format(account.username, ', '.join(
             s.domain for s in account.sites)))
-        util.set_authed(account.sites)
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
 
@@ -74,18 +51,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    # Tumblr only has authorize, no authenticate
-    oauth = OAuth1Session(
-        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
-        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
-        callback_uri=callback_uri)
-    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
-    session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth.authorization_url(AUTHORIZE_URL)
-
-
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
     request_token = request.args.get('oauth_token')
     if not verifier or not request_token:
@@ -108,13 +74,30 @@ def process_authenticate_callback(callback_uri):
     user_info = info_resp.get('response', {}).get('user')
     user_id = username = user_info.get('name')
 
-    return {
-        'token': token,
-        'secret': secret,
-        'user_id': user_id,
-        'username': username,
-        'user_info': user_info,
-    }
+    account = Account.query.filter_by(
+        service='tumblr', user_id=user_id).first()
+
+    if not account:
+        account = Account(service='tumblr', user_id=user_id)
+        db.session.add(account)
+
+    account.username = username
+    account.user_info = user_info
+    account.token = token
+    account.token_secret = secret
+
+    sites = []
+    for blog in user_info.get('blogs', []):
+        sites.append(Tumblr(
+            url=blog.get('url'),
+            domain=util.domain_for_url(blog.get('url')),
+            site_id=blog.get('name'),
+            site_info=blog))
+    account.update_sites(sites)
+
+    db.session.commit()
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 def publish(site):

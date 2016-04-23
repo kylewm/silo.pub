@@ -31,111 +31,50 @@ wordpress = Blueprint('wordpress', __name__)
 @wordpress.route('/wordpress/authorize', methods=['POST'])
 def authorize():
     redirect_uri = url_for('.callback', _external=True)
-    client_id = current_app.config['WORDPRESS_CLIENT_ID']
-
-    return redirect(API_AUTHORIZE_URL + '?' + urllib.parse.urlencode({
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
-        'response_type': 'code',
-        'state': generate_csrf() + '|auth',
-    }))
+    return redirect(get_authorize_url(redirect_uri))
 
 
 @wordpress.route('/wordpress/callback')
 def callback():
-    state = request.args.get('state', '')
-    csrf, purpose = state.split('|', 1)
-
-    # wordpress only allows us one redirect url, so use the state parameter to
-    # hack it to redirect to another one
-    if purpose == 'id':
-        return redirect(url_for(
-            'micropub.indieauth_callback',
-            code=request.args.get('code'),
-            error=request.args.get('error'),
-            error_description=request.args.get('error_description'),
-            state=state))
-
-    redirect_uri = url_for('wordpress.callback', _external=True)
-    result = process_authenticate_callback(redirect_uri)
+    redirect_uri = url_for('.callback', _external=True)
+    result = process_callback(redirect_uri)
 
     if 'error' in result:
         flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
 
-    access_token = result['token']
-    username = result['username']
-    user_id = result['user_id']
-    user_info = result['user_info']
-    blog_id = result['blog_id']
-    blog_url = result['blog_url']
-
-    account = Account.query.filter_by(
-        service=SERVICE_NAME, user_id=user_id).first()
-    if not account:
-        account = Account(service=SERVICE_NAME, user_id=user_id)
-    account.username = username
-    account.user_info = user_info
-
-    current_app.logger.info(
-        'Fetching site info %s', API_SITE_URL.format(blog_id))
-    r = requests.get(API_SITE_URL.format(blog_id), headers={
-        'Authorization': 'Bearer ' + access_token})
-    current_app.logger.info('Site info response %s', r)
-
-    if r.status_code // 100 != 2:
-        error_obj = r.json()
-        flash('Error ({}) fetching site info: {}, description: {}'.format(
-            r.status_code, error_obj.get('error'),
-            error_obj.get('error_description')), 'danger')
-        return redirect(url_for('views.index'))
-
-    site = Wordpress.query.filter_by(
-        account=account, site_id=blog_id).first()
-    if not site:
-        site = Wordpress(site_id=blog_id)
-        account.sites.append(site)
-
-    site.site_info = r.json()
-    site.url = blog_url
-    site.domain = util.domain_for_url(blog_url)
-    site.token = access_token
-
-    db.session.add(account)
-    db.session.commit()
-
-    flash('Authorized {}: {}'.format(account.username, site.domain))
-    util.set_authed([site])
-
     return redirect(url_for('views.setup_site', service=SERVICE_NAME,
-                            domain=site.domain))
+                            domain=result['site'].domain))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
+def get_authorize_url(callback_uri, me=None, **kwargs):
     # wordpress.com only lets us specify one redirect_uri, so we'll ignore
     # the passed in url and redirect to it later
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
-    return API_AUTHENTICATE_URL + '?' + urllib.parse.urlencode({
+
+    params = {
         'client_id': client_id,
-        'redirect_uri': url_for('wordpress.callback', _external=True),
+        'redirect_uri': callback_uri,
         'response_type': 'code',
-        'state': generate_csrf() + '|id',
-    })
+        'state': generate_csrf(),
+    }
+    if me:
+        params['blog'] = me
+
+    return API_AUTHORIZE_URL + '?' + urllib.parse.urlencode(params)
 
 
-def process_authenticate_callback(callback_uri):
-    # ignore the callback uri because wp only lets us define one
+def process_callback(callback_uri):
     client_id = current_app.config['WORDPRESS_CLIENT_ID']
     client_secret = current_app.config['WORDPRESS_CLIENT_SECRET']
-    redirect_uri = url_for('wordpress.callback', _external=True),
 
     code = request.args.get('code')
     error = request.args.get('error')
     error_desc = request.args.get('error_description')
-    csrf, purpose = request.args.get('state', '').split('|', 1)
+    csrf = request.args.get('state', '')
 
     if error:
-        return {'error': 'Wordpress authorization canceled or failed with '
+        return {'error':  'Wordpress authorization canceled or failed with '
                 'error: {}, and description: {}' .format(error, error_desc)}
 
     if not validate_csrf(csrf):
@@ -143,7 +82,7 @@ def process_authenticate_callback(callback_uri):
 
     r = requests.post(API_TOKEN_URL, data={
         'client_id': client_id,
-        'redirect_uri': redirect_uri,
+        'redirect_uri': callback_uri,
         'client_secret': client_secret,
         'code': code,
         'grant_type': 'authorization_code',
@@ -153,8 +92,12 @@ def process_authenticate_callback(callback_uri):
         error_obj = r.json()
         return {
             'error': 'Error ({}) requesting access token: {}, description: {}'
-            .format(r.status_code, error_obj.get('error'),
-                    error_obj.get('error_description'))}
+            .format(
+                r.status_code,
+                error_obj.get('error'),
+                error_obj.get('error_description')
+            ),
+        }
 
     payload = r.json()
     current_app.logger.info('WordPress token endpoint repsonse: %r', payload)
@@ -177,14 +120,41 @@ def process_authenticate_callback(callback_uri):
     user_id = str(user_info.get('ID'))
     username = user_info.get('username')
 
-    return {
-        'token': access_token,
-        'blog_id': blog_id,
-        'blog_url': blog_url,
-        'user_id': user_id,
-        'username': username,
-        'user_info': user_info,
-    }
+    account = Account.query.filter_by(
+        service=SERVICE_NAME, user_id=user_id).first()
+    if not account:
+        account = Account(service=SERVICE_NAME, user_id=user_id)
+    account.username = username
+    account.user_info = user_info
+
+    current_app.logger.info(
+        'Fetching site info %s', API_SITE_URL.format(blog_id))
+    r = requests.get(API_SITE_URL.format(blog_id), headers={
+        'Authorization': 'Bearer ' + access_token})
+    current_app.logger.info('Site info response %s', r)
+
+    if r.status_code // 100 != 2:
+        error_obj = r.json()
+        return {'error': 'Error ({}) fetching site info: {}, description: {}'
+                .format(r.status_code, error_obj.get('error'),
+                        error_obj.get('error_description'))}
+
+    site = Wordpress.query.filter_by(
+        account=account, site_id=blog_id).first()
+    if not site:
+        site = Wordpress(site_id=blog_id)
+        account.sites.append(site)
+
+    site.site_info = r.json()
+    site.url = blog_url
+    site.domain = util.domain_for_url(blog_url)
+    site.token = access_token
+
+    db.session.add(account)
+    db.session.commit()
+
+    util.set_authed([site])
+    return {'account': account}
 
 
 def publish(site):

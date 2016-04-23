@@ -25,17 +25,23 @@ def proxy_homepage(user_id):
     account = Account.query.filter_by(
         service=SERVICE_NAME, user_id=user_id).first()
 
-    if not account:
-        abort(404)
+    params = {
+        'service_name': 'Facebook',
+        'service_url': 'https://www.facebook.com/',
+        'service_photo': 'https://static.xx.fbcdn.net/rsrc.php/yl/r/H3nktOa7ZMg.ico',
+    }
 
-    info = account.user_info or {}
-    return util.render_proxy_homepage(
-        user_name=info.get('name') or account.username,
-        user_url=account.sites[0].url,
-        user_photo=info.get('picture', {}).get('data', {}).get('url'),
-        service_name='Facebook',
-        service_url='https://www.facebook.com/',
-        service_photo='https://static.xx.fbcdn.net/rsrc.php/yl/r/H3nktOa7ZMg.ico')
+    if account:
+        info = account.user_info or {}
+        params.update({
+            'user_name': info.get('name') or account.username,
+            'user_url': account.sites[0].url,
+            'user_photo': info.get('picture', {}).get('data', {}).get('url'),
+        })
+    else:
+        params['user_name'] = user_id
+
+    return util.render_proxy_homepage(**params)
 
 
 @facebook.route('/facebook/authorize', methods=['POST'])
@@ -53,45 +59,18 @@ def authorize():
 @facebook.route('/facebook/callback')
 def callback():
     callback_uri = url_for('.callback', _external=True)
-    result = process_authenticate_callback(callback_uri)
+    result = process_callback(callback_uri)
+
     if 'error' in result:
         flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
-    account = Account.query.filter_by(
-        service='facebook', user_id=result['user_id']).first()
 
-    if not account:
-        account = Account(service='facebook', user_id=result['user_id'],
-                          username=result['user_id'])
-        db.session.add(account)
-
-    account.user_info = result['user_info']
-    account.token = result['token']
-
-    account.update_sites([Facebook(
-        url='https://www.facebook.com/{}'.format(account.user_id),
-        # overloading "domain" to really mean "user's canonical url"
-        domain='facebook.com/{}'.format(account.user_id),
-        site_id=account.user_id)])
-
-    db.session.commit()
-    flash('Authorized {}: {}'.format(account.username, ', '.join(
-        s.domain for s in account.sites)))
-    util.set_authed(account.sites)
-
+    account = result['account']
     return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                             user_id=account.user_id))
 
 
-def get_authenticate_url(callback_uri, **kwargs):
-    return 'https://www.facebook.com/dialog/oauth?' + urlencode({
-        'client_id': current_app.config['FACEBOOK_CLIENT_ID'],
-        'redirect_uri': callback_uri,
-        'state': generate_csrf(),
-    })
-
-
-def get_authorize_url(callback_uri):
+def get_authorize_url(callback_uri, **kwargs):
     return 'https://graph.facebook.com/oauth/authorize?' + urlencode({
         'client_id': current_app.config['FACEBOOK_CLIENT_ID'],
         'redirect_uri': callback_uri,
@@ -100,7 +79,7 @@ def get_authorize_url(callback_uri):
     })
 
 
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     code = request.args.get('code')
     state = request.args.get('state')
     error = request.args.get('error')
@@ -146,12 +125,28 @@ def process_authenticate_callback(callback_uri):
 
     user_info = r.json()
     current_app.logger.debug('authed user info from Facebook %s', user_info)
-    return {
-        'token': access_token,
-        'user_id': user_info.get('id'),
-        'username': user_info.get('name'),
-        'user_info': user_info,
-    }
+
+    user_id = user_info.get('id')
+    account = Account.query.filter_by(
+        service='facebook', user_id=user_id).first()
+
+    if not account:
+        account = Account(service='facebook', user_id=user_id,
+                          username=user_id)
+        db.session.add(account)
+
+    account.user_info = user_info
+    account.token = access_token
+
+    account.update_sites([Facebook(
+        url='https://www.facebook.com/{}'.format(account.user_id),
+        # overloading "domain" to really mean "user's canonical url"
+        domain='facebook.com/{}'.format(account.user_id),
+        site_id=account.user_id)])
+
+    db.session.commit()
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 @facebook.route('/facebook/username', methods=['POST'])

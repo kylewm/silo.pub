@@ -9,7 +9,7 @@ import sys
 import uuid
 import binascii
 import os
-
+import urllib
 
 SERVICES = {}
 micropub = Blueprint('micropub', __name__)
@@ -21,6 +21,37 @@ def register_service(name, service):
     """
     SERVICES[name] = service
 
+
+def guess_service(me):
+    me = deproxyify(me)
+    service = None
+
+    # if we've previously registered, then it's easy
+    site = Site.lookup_by_url(me)
+    if site:
+        service = site.service
+    else:
+        # otherwise we have to take an educated guess
+        domain = util.domain_for_url(me).lower()
+        current_app.logger.debug('guessing service by domain %s', domain)
+        if domain.endswith('tumblr.com'):
+            service = 'tumblr'
+        elif domain.endswith('wordpress.com'):
+            service = 'wordpress'
+        elif domain.endswith('blogger.com'):
+            service = 'blogger'
+        elif domain == 'twitter.com':
+            service = 'twitter'
+        elif domain == 'facebook.com':
+            service = 'facebook'
+        elif domain == 'flickr.com':
+            service = 'flickr'
+        elif domain == 'github.com':
+            service = 'github'
+        elif domain == 'goodreads.com':
+            service = 'goodreads'
+
+    return service and SERVICES[service]
 
 @csrf.exempt
 @micropub.route('/indieauth', methods=['GET', 'POST'])
@@ -64,13 +95,6 @@ def indieauth():
             resp.headers['IndieAuth'] = 'authorization_endpoint'
             return resp
 
-        site = Site.lookup_by_url(deproxyify(me))
-        if not site:
-            current_app.logger.warn('Auth failed, unknown site %s', me)
-            return redirect(util.set_query_params(
-                redirect_uri, error='Authorization failed. Unknown site {}'
-                .format(me)))
-
         session['indieauth_params'] = {
             'me': me,
             'redirect_uri': redirect_uri,
@@ -78,7 +102,14 @@ def indieauth():
             'state': request.args.get('state', ''),
             'scope': request.args.get('scope', ''),
         }
-        return redirect(SERVICES[site.service].get_authenticate_url(
+
+        service = guess_service(me)
+        if not service:
+            resp = make_response("Could not find a service for URL {}"
+                                 .format(me))
+            return resp
+
+        return redirect(service.get_authorize_url(
             url_for('.indieauth_callback', _external=True), me=me))
 
     except:
@@ -102,38 +133,41 @@ def indieauth_callback():
     state = ia_params.get('state', '')
     scope = ia_params.get('scope', '')
 
-    my_site = Site.lookup_by_url(deproxyify(me))
-    if not my_site:
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorization failed. Unknown site {}'.format(me)))
+    if not me:
+        current_app.logger.warn('No "me" value in session')
+        return abort(400)
 
-    result = SERVICES[my_site.service].process_authenticate_callback(
+    service = guess_service(me)
+    if not service:
+        current_app.logger.warn('Could not guess service for URL %s', me)
+        return abort(400)
+
+    result = service.process_callback(
         url_for('.indieauth_callback', _external=True))
+
     if 'error' in result:
         current_app.logger.warn('error on callback %s', result['error'])
         return redirect(
             util.set_query_params(redirect_uri, error=result['error']))
 
-    current_app.logger.debug('auth callback result %s', result)
+    parsed = urllib.parse.urlparse(deproxyify(me))
+    domain = parsed.netloc
+    if parsed.path != '/':
+        domain += parsed.path
 
-    # check that the authorized user owns the requested site
-    authed_account = Account.query.filter_by(
-        service=my_site.service, user_id=result['user_id']).first()
+    account = result['account']
+    my_site = result.get('site') or next(
+        (s for s in account.sites if s.domain == domain), None)
 
-    if not authed_account:
-        current_app.logger.warn(
-            'Auth failed, unknown account %s', result['user_id'])
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorization failed. Unknown account {}'
-            .format(result['user_id'])))
+    if not my_site:
+        error = 'Authed account does not have a site for domain {}'.format(
+            domain)
+        current_app.logger.warn('error on callback %s', error)
+        return redirect(
+            util.set_query_params(redirect_uri, error=error))
 
-    if my_site.account != authed_account:
-        return redirect(util.set_query_params(
-            redirect_uri,
-            error='Authorized account {} does not own requested site {}'
-            .format(authed_account.username, my_site.domain)))
+    current_app.logger.debug('auth callback got account %s and site %s',
+                             account, my_site)
 
     # hand back a code to the micropub client
     code = binascii.hexlify(os.urandom(16)).decode()
@@ -182,7 +216,7 @@ def token_endpoint():
 
     if not site_id or not site:
         return util.urlenc_response(
-            {'error', 'No site for authorization code!'}, 400)
+            {'error': 'No site for authorization code!'}, 400)
 
     token = Token.create_or_update(site, scope, client_id)
     return util.urlenc_response({
@@ -245,7 +279,7 @@ def micropub_endpoint():
     return SERVICES[site.service].publish(site)
 
 
-def deproxyify(me):
-    if me and me.startswith(request.url_root):
-        return 'http://' + me[len(request.url_root):]
-    return me
+def deproxyify(url):
+    if url.startswith(request.url_root):
+        return 'http://' + url[len(request.url_root):]
+    return url

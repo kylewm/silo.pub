@@ -39,16 +39,26 @@ def proxy_homepage(username):
     account = Account.query.filter_by(
         service=SERVICE_NAME, username=username).first()
 
-    if not account:
-        abort(404)
+    params = {
+        'service_name': 'Twitter',
+        'service_url': 'https://twitter.com/',
+        'service_photo': 'https://abs.twimg.com/favicons/favicon.ico',
+    }
 
-    return util.render_proxy_homepage(
-        user_name='@' + account.username,
-        user_url=account.sites[0].url,
-        user_photo=(account.user_info or {}).get('profile_image_url_https'),
-        service_name='Twitter',
-        service_url='https://twitter.com/',
-        service_photo='https://abs.twimg.com/favicons/favicon.ico')
+    if account:
+        params.update({
+            'user_name': '@' + account.username,
+            'user_url': account.sites[0].url,
+            'user_photo': (account.user_info or {}).get(
+                'profile_image_url_https'),
+        })
+    else:
+        params.update({
+            'user_name': '@' + username,
+            'user_url': 'https://twitter.com/' + username,
+        })
+
+    return util.render_proxy_homepage(**params)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])
@@ -66,32 +76,12 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        result = process_authenticate_callback(callback_uri)
+        result = process_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
 
-        account = Account.query.filter_by(
-            service='twitter', user_id=result['user_id']).first()
-
-        if not account:
-            account = Account(service='twitter', user_id=result['user_id'])
-            db.session.add(account)
-
-        account.username = result['username']
-        account.user_info = result['user_info']
-        account.token = result['token']
-        account.token_secret = result['secret']
-
-        account.update_sites([Twitter(
-            url='https://twitter.com/{}'.format(account.username),
-            domain='twitter.com/{}'.format(account.username),
-            site_id=account.user_id)])
-
-        db.session.commit()
-        flash('Authorized {}: {}'.format(account.username, ', '.join(
-            s.domain for s in account.sites)))
-        util.set_authed(account.sites)
+        account = result['account']
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
 
@@ -101,41 +91,25 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri, me=None, **kwargs):
+def get_authorize_url(callback_uri, me=None, **kwargs):
     session.pop('oauth_token', None)
     session.pop('oauth_token_secret', None)
     oauth_session = OAuth1Session(
         client_key=current_app.config['TWITTER_CLIENT_KEY'],
         client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
         callback_uri=callback_uri)
+
     r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
     session['oauth_token'] = r.get('oauth_token')
     session['oauth_token_secret'] = r.get('oauth_token_secret')
-
     params = {'force_login': 'true'}
     if me:
         params['screen_name'] = me.split('/')[-1]
     return oauth_session.authorization_url(
-        AUTHENTICATE_URL + '?' + urllib.parse.urlencode(params))
-
-
-def get_authorize_url(callback_uri):
-    session.pop('oauth_token', None)
-    session.pop('oauth_token_secret', None)
-    oauth_session = OAuth1Session(
-        client_key=current_app.config['TWITTER_CLIENT_KEY'],
-        client_secret=current_app.config['TWITTER_CLIENT_SECRET'],
-        callback_uri=callback_uri)
-
-    r = oauth_session.fetch_request_token(REQUEST_TOKEN_URL)
-    session['oauth_token'] = r.get('oauth_token')
-    session['oauth_token_secret'] = r.get('oauth_token_secret')
-    params = {'force_login': 'true'}
-    return oauth_session.authorization_url(
         AUTHORIZE_URL + '?' + urllib.parse.urlencode(params))
 
 
-def process_authenticate_callback(callback_uri):
+def process_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
     if not verifier:
         # user declined
@@ -169,7 +143,8 @@ def process_authenticate_callback(callback_uri):
     user_info = requests.get(VERIFY_CREDENTIALS_URL, auth=auth).json()
 
     if 'errors' in user_info:
-        return {'error': 'Error fetching credentials %r' % user_info.get('errors')}
+        return {'error': 'Error fetching credentials %r'
+                % user_info.get('errors')}
 
     user_id = user_info.get('id_str')
     username = user_info.get('screen_name')
@@ -178,13 +153,26 @@ def process_authenticate_callback(callback_uri):
                              user_id, username)
     current_app.logger.debug('user_info: %r', user_info)
 
-    return {
-        'token': access_token,
-        'secret': access_token_secret,
-        'user_id': user_id,
-        'username': username,
-        'user_info': user_info,
-    }
+    account = Account.query.filter_by(
+        service='twitter', user_id=user_id).first()
+
+    if not account:
+        account = Account(service='twitter', user_id=user_id)
+        db.session.add(account)
+
+    account.username = username
+    account.user_info = user_info
+    account.token = access_token
+    account.token_secret = access_token_secret
+
+    account.update_sites([Twitter(
+        url='https://twitter.com/{}'.format(account.username),
+        domain='twitter.com/{}'.format(account.username),
+        site_id=account.user_id)])
+
+    db.session.commit()
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 def publish(site):
