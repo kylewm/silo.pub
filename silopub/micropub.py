@@ -9,7 +9,7 @@ import sys
 import uuid
 import binascii
 import os
-from urllib.parse import urlparse
+import urllib
 
 SERVICES = {}
 micropub = Blueprint('micropub', __name__)
@@ -22,10 +22,40 @@ def register_service(name, service):
     SERVICES[name] = service
 
 
+def guess_service(me):
+    me = deproxyify(me)
+    service = None
+
+    # if we've previously registered, then it's easy
+    site = Site.lookup_by_url(me)
+    if site:
+        service = site.service
+    else:
+        # otherwise we have to take an educated guess
+        domain = util.domain_for_url(me).lower()
+        current_app.logger.debug('guessing service by domain %s', domain)
+        if domain.endswith('tumblr.com'):
+            service = 'tumblr'
+        elif domain.endswith('wordpress.com'):
+            service = 'wordpress'
+        elif domain.endswith('blogger.com'):
+            service = 'blogger'
+        elif domain == 'twitter.com':
+            service = 'twitter'
+        elif domain == 'facebook.com':
+            service = 'facebook'
+        elif domain == 'flickr.com':
+            service = 'flickr'
+        elif domain == 'github.com':
+            service = 'github'
+        elif domain == 'goodreads.com':
+            service = 'goodreads'
+
+    return service and SERVICES[service]
+
 @csrf.exempt
 @micropub.route('/indieauth', methods=['GET', 'POST'])
 def indieauth():
-    service = request.args.get('service')
     # verify authorization
     if request.method == 'POST':
         code = request.form.get('code')
@@ -73,8 +103,14 @@ def indieauth():
             'scope': request.args.get('scope', ''),
         }
 
-        return redirect(SERVICES[service].get_authorize_url(
-            url_for('.indieauth_callback', service=service, _external=True), me=me))
+        service = guess_service(me)
+        if not service:
+            resp = make_response("Could not find a service for URL {}"
+                                 .format(me))
+            return resp
+
+        return redirect(service.get_authorize_url(
+            url_for('.indieauth_callback', _external=True), me=me))
 
     except:
         current_app.logger.exception('Starting IndieAuth')
@@ -90,7 +126,6 @@ def indieauth():
 
 @micropub.route('/indieauth/callback')
 def indieauth_callback():
-    service = request.args.get('service')
     ia_params = session.get('indieauth_params', {})
     me = ia_params.get('me')
     client_id = ia_params.get('client_id')
@@ -98,19 +133,36 @@ def indieauth_callback():
     state = ia_params.get('state', '')
     scope = ia_params.get('scope', '')
 
-    account, error = SERVICES[service].process_callback(
+    if not me:
+        current_app.logger.warn('No "me" value in session')
+        return abort(400)
+
+    service = guess_service(me)
+    if not service:
+        current_app.logger.warn('Could not guess service for URL %s', me)
+        return abort(400)
+
+    result = service.process_callback(
         url_for('.indieauth_callback', _external=True))
 
-    if error:
-        current_app.logger.warn('error on callback %s', error)
+    if 'error' in result:
+        current_app.logger.warn('error on callback %s', result['error'])
         return redirect(
-            util.set_query_params(redirect_uri, error=error))
+            util.set_query_params(redirect_uri, error=result['error']))
 
-    my_site = next((s for s in account.sites
-                    if s.domain == url_to_domain(me)), None)
+    parsed = urllib.parse.urlparse(deproxyify(me))
+    domain = parsed.netloc
+    if parsed.path != '/':
+        domain += parsed.path
+
+    account = result['account']
+    my_site = result.get('site') or next(
+        (s for s in account.sites if s.domain == domain), None)
 
     if not my_site:
-        error = 'Could not find site matching me {}'.format(me)
+        error = 'Authed account does not have a site for domain {}'.format(
+            domain)
+        current_app.logger.warn('error on callback %s', error)
         return redirect(
             util.set_query_params(redirect_uri, error=error))
 
@@ -164,7 +216,7 @@ def token_endpoint():
 
     if not site_id or not site:
         return util.urlenc_response(
-            {'error', 'No site for authorization code!'}, 400)
+            {'error': 'No site for authorization code!'}, 400)
 
     token = Token.create_or_update(site, scope, client_id)
     return util.urlenc_response({
@@ -227,14 +279,7 @@ def micropub_endpoint():
     return SERVICES[site.service].publish(site)
 
 
-def url_to_domain(url):
-    # deproxy-ify
+def deproxyify(url):
     if url.startswith(request.url_root):
-        return url[len(request.url_root):]
-
-    parsed = urlparse(url)
-    domain = parsed.netloc
-    if parsed.path != '/':
-        return domain + parsed.path
-
-    return domain
+        return 'http://' + url[len(request.url_root):]
+    return url

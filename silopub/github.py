@@ -42,7 +42,7 @@ def proxy_homepage(username):
         params.update({
             'user_name': account.username,
             'user_url': account.sites[0].url,
-            'user_photo': (account.user_info or {}).get('avatar_url')
+            'user_photo': (account.user_info or {}).get('avatar_url'),
         })
     else:
         params.update({
@@ -50,7 +50,7 @@ def proxy_homepage(username):
             'user_url': 'https://github.com/' + username,
         })
 
-    return util.render_proxy_homepage(SERVICE_NAME, **params)
+    return util.render_proxy_homepage(**params)
 
 
 @github.route('/github/authorize', methods=['POST'])
@@ -68,15 +68,15 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        account, error = process_callback(callback_uri)
+        result = process_callback(callback_uri)
 
-        if error:
-            flash(error, category='danger')
+        if 'error' in result:
+            flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
 
+        account = result['account']
         flash('Authorized {}: {}'.format(account.username, ', '.join(
             s.domain for s in account.sites)))
-
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
 
@@ -102,11 +102,11 @@ def process_callback(callback_uri):
     error_desc = request.args.get('error_description', '')
 
     if error:
-        return (None, 'GitHub auth canceled or failed with error: {}, '
-                'description: {}'.format(error, error_desc))
+        return {'error': 'GitHub auth canceled or failed with error: {}, '
+                'description: {}'.format(error, error_desc)}
 
     if not validate_csrf(state):
-        return None, 'csrf token mismatch in GitHub callback.'
+        return {'error': 'csrf token mismatch in GitHub callback.'}
 
     r = requests.post('https://github.com/login/oauth/access_token', data={
         'client_id': current_app.config['GITHUB_CLIENT_ID'],
@@ -147,7 +147,7 @@ def process_callback(callback_uri):
     db.session.commit()
     util.set_authed(account.sites)
 
-    return account, None
+    return {'account': account}
 
 
 def publish(site):

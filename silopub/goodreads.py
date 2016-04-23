@@ -40,16 +40,20 @@ def proxy_homepage(user_id):
     account = Account.query.filter_by(
         service=SERVICE_NAME, user_id=user_id).first()
 
-    if not account:
-        abort(404)
-
-    return util.render_proxy_homepage(
-        user_name=account.username,
-        user_url=account.sites[0].url,
-        user_photo=account.user_info and account.user_info.get('image'),
+    params = dict(
         service_name='Goodreads',
         service_url='https://www.goodreads.com/',
         service_photo='https://www.goodreads.com/favicon.ico')
+
+    if account:
+        params.update(dict(
+            user_name=account.username,
+            user_url=account.sites[0].url,
+            user_photo=account.user_info and account.user_info.get('image')))
+    else:
+        params['user_name'] = user_id
+
+    return util.render_proxy_homepage(**params)
 
 
 @goodreads.route('/goodreads/authorize', methods=['POST'])
@@ -74,29 +78,7 @@ def callback():
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
 
-        account = Account.query.filter_by(
-            service=SERVICE_NAME, user_id=result['user_id']).first()
-        if not account:
-            account = Account(service=SERVICE_NAME, user_id=result['user_id'])
-            db.session.add(account)
-
-        account.username = result['username']
-        account.token = result['token']
-        account.token_secret = result['secret']
-        account.user_info = fetch_user_info(account.user_id)
-
-        url = 'https://www.goodreads.com/user/show/' + account.user_id
-
-        account.update_sites([Goodreads(
-            url=url,
-            domain='goodreads.com/' + account.user_id,
-            site_id=account.user_id)])
-
-        db.session.commit()
-        flash('Authorized {} ({}): {}'.format(
-            account.user_id, account.username, ', '.join(
-                site.url for site in account.sites)))
-        util.set_authed(account.sites)
+        account = result['account']
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
     except:
@@ -105,7 +87,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authorize_url(callback_uri):
+def get_authorize_url(callback_uri, **kwargs):
     session.pop('oauth_token', None)
     session.pop('oauth_token_secret', None)
     oauth_session = OAuth1Session(
@@ -174,12 +156,27 @@ def process_callback(callback_uri):
     user_id = user.attrib['id']
     user_name = user.findtext('name')
 
-    return {
-        'token': access_token,
-        'secret': access_token_secret,
-        'user_id': user_id,
-        'username': user_name,
-    }
+    account = Account.query.filter_by(
+        service=SERVICE_NAME, user_id=user_id).first()
+    if not account:
+        account = Account(service=SERVICE_NAME, user_id=user_id)
+        db.session.add(account)
+
+    account.username = user_name
+    account.token = access_token
+    account.token_secret = access_token_secret
+    account.user_info = fetch_user_info(account.user_id)
+
+    url = 'https://www.goodreads.com/user/show/' + account.user_id
+
+    account.update_sites([Goodreads(
+        url=url,
+        domain='goodreads.com/' + account.user_id,
+        site_id=account.user_id)])
+
+    db.session.commit()
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 def fetch_user_info(user_id):

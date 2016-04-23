@@ -82,27 +82,7 @@ def callback():
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
 
-        account = Account.query.filter_by(
-            service=SERVICE_NAME, user_id=result['user_id']).first()
-
-        if not account:
-            account = Account(service=SERVICE_NAME, user_id=result['user_id'])
-            db.session.add(account)
-
-        account.username = result['username']
-        account.user_info = result['user_info']
-        account.token = result['token']
-        account.token_secret = result['secret']
-
-        account.update_sites([Flickr(
-            url='https://flickr.com/{}'.format(account.user_id),
-            domain='flickr.com/{}'.format(account.user_id),
-            site_id=account.user_id)])
-
-        db.session.commit()
-        flash('Authorized {}: {}'.format(account.username, ', '.join(
-            s.domain for s in account.sites)))
-        util.set_authed(account.sites)
+        account = result['account']
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
 
@@ -112,17 +92,7 @@ def callback():
         return redirect(url_for('views.index'))
 
 
-def get_authenticate_url(callback_uri, me=None, **kwargs):
-    oauth = OAuth1Session(
-        client_key=current_app.config['FLICKR_CLIENT_KEY'],
-        client_secret=current_app.config['FLICKR_CLIENT_SECRET'],
-        callback_uri=callback_uri)
-    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
-    session['oauth_token_secret'] = r.get('oauth_token_secret')
-    return oauth.authorization_url(AUTHENTICATE_URL)
-
-
-def get_authorize_url(callback_uri):
+def get_authorize_url(callback_uri, me=None, **kwargs):
     oauth = OAuth1Session(
         client_key=current_app.config['FLICKR_CLIENT_KEY'],
         client_secret=current_app.config['FLICKR_CLIENT_SECRET'],
@@ -160,13 +130,28 @@ def process_callback(callback_uri):
     }, token, secret)
     user_info = r.json()
 
-    return {
-        'token': token,
-        'secret': secret,
-        'user_id': user_id,
-        'username': username,
-        'user_info': user_info,
-    }
+    account = Account.query.filter_by(
+        service=SERVICE_NAME, user_id=user_id).first()
+
+    if not account:
+        account = Account(service=SERVICE_NAME, user_id=user_id)
+        db.session.add(account)
+
+    account.username = username
+    account.user_info = user_info
+    account.token = token
+    account.token_secret = secret
+
+    account.update_sites([Flickr(
+        url='https://flickr.com/{}'.format(account.user_id),
+        domain='flickr.com/{}'.format(account.user_id),
+        site_id=account.user_id)])
+
+    db.session.commit()
+    flash('Authorized {}: {}'.format(account.username, ', '.join(
+        s.domain for s in account.sites)))
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 def call_api_method(http_method, flickr_method, params,

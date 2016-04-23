@@ -38,45 +38,7 @@ def callback():
         flash(result['error'], category='danger')
         return redirect(url_for('views.index'))
 
-    # find or create the account
-    user_id = result['user_id']
-    account = Account.lookup_by_user_id(SERVICE_NAME, user_id)
-
-    if not account:
-        account = Account(service=SERVICE_NAME, user_id=user_id)
-        db.session.add(account)
-
-    account.username = result['username']
-    account.user_info = result['user_info']
-    account.token = result['token']
-    account.refresh_token = result['refresh']
-    account.expiry = result['expiry']
-
-    r = requests.get(API_BLOGS_URL, headers={
-        'Authorization': 'Bearer ' + account.token,
-    })
-
-    if util.check_request_failed(r):
-        return redirect(url_for('views.index'))
-
-    payload = r.json()
-    blogs = payload.get('items', [])
-
-    # find or create the sites
-    sites = []
-    for blog in blogs:
-        sites.append(Blogger(
-            url=blog.get('url'),
-            domain=util.domain_for_url(blog.get('url')),
-            site_id=blog.get('id'),
-            site_info=blog))
-    account.update_sites(sites)
-
-    db.session.commit()
-    flash('Authorized {}: {}'.format(account.username, ', '.join(
-        s.domain for s in account.sites)))
-    util.set_authed(account.sites)
-
+    account = result['account']
     return redirect(url_for('views.setup_account',
                             service=SERVICE_NAME,
                             user_id=account.user_id))
@@ -144,23 +106,42 @@ def process_callback(redirect_uri):
     payload = r.json()
     username = user_id = payload.get('id')
 
+    # find or create the account
     account = Account.lookup_by_user_id(SERVICE_NAME, user_id)
-    if account:
-        # update the saved tokens
-        account.token = access_token
-        account.expiry = expiry
-        if refresh_token:
-            account.refresh_token = refresh_token
-        db.session.commit()
 
-    return {
-        'user_id': user_id,
-        'username': username,
-        'user_info': payload,
-        'token': access_token,
-        'refresh': refresh_token,
-        'expiry': expiry,
-    }
+    if not account:
+        account = Account(service=SERVICE_NAME, user_id=user_id)
+        db.session.add(account)
+
+    account.username = username
+    account.user_info = payload
+    account.token = access_token
+    account.refresh_token = refresh_token
+    account.expiry = expiry
+
+    r = requests.get(API_BLOGS_URL, headers={
+        'Authorization': 'Bearer ' + account.token,
+    })
+
+    if util.check_request_failed(r):
+        return redirect(url_for('views.index'))
+
+    payload = r.json()
+    blogs = payload.get('items', [])
+
+    # find or create the sites
+    sites = []
+    for blog in blogs:
+        sites.append(Blogger(
+            url=blog.get('url'),
+            domain=util.domain_for_url(blog.get('url')),
+            site_id=blog.get('id'),
+            site_info=blog))
+    account.update_sites(sites)
+
+    db.session.commit()
+    util.set_authed(account.sites)
+    return {'account': account}
 
 
 def maybe_refresh_access_token(account):

@@ -34,18 +34,6 @@ class TestTwitter(SiloPubTestCase):
                 auth_url)
             post.assert_called_once_with(twitter.REQUEST_TOKEN_URL)
 
-    @patch('requests.Session.post')
-    def test_get_authenticate_url(self, post):
-        with self.app.test_request_context():
-            post.return_value = FakeResponse(
-                'oauth_token=123&oauth_token_secret=456')
-            auth_url = twitter.get_authenticate_url(
-                CALLBACK_URI, me='https://twitter.com/fakeuser')
-            self.assertUrlsMatch(
-                'https://api.twitter.com/oauth/authenticate?force_login=true&screen_name=fakeuser&oauth_token=123',
-                auth_url)
-            post.assert_called_once()
-
     @patch('requests.get')
     @patch('requests_oauthlib.OAuth1Session.fetch_access_token')
     def test_process_callback(self, fetch_access_token, getter):
@@ -64,17 +52,13 @@ class TestTwitter(SiloPubTestCase):
             }))
 
             result = twitter.process_callback(CALLBACK_URI)
-            self.assertEqual({
-                'token': '123',
-                'secret': '456',
-                'user_id': '101010',
-                'username': 'fakeuser',
-                'user_info': {
-                    'id_str': '101010',
-                    'screen_name': 'fakeuser',
-                    'extra_info': 'Hi',
-                }
-            }, result)
+
+            self.assertTrue('account' in result)
+            account = result['account']
+            self.assertEqual('123', account.token)
+            self.assertEqual('456', account.token_secret)
+            self.assertEqual('101010', account.user_id)
+            self.assertEqual('fakeuser', account.username)
 
             fetch_access_token.assert_called_once_with(
                 twitter.ACCESS_TOKEN_URL)

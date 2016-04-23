@@ -42,14 +42,15 @@ def proxy_homepage(username):
     params = {
         'service_name': 'Twitter',
         'service_url': 'https://twitter.com/',
-        'service_photo': 'https://abs.twimg.com/favicons/favicon.ico'
+        'service_photo': 'https://abs.twimg.com/favicons/favicon.ico',
     }
 
     if account:
         params.update({
             'user_name': '@' + account.username,
             'user_url': account.sites[0].url,
-            'user_photo': (account.user_info or {}).get('profile_image_url_https'),
+            'user_photo': (account.user_info or {}).get(
+                'profile_image_url_https'),
         })
     else:
         params.update({
@@ -57,7 +58,7 @@ def proxy_homepage(username):
             'user_url': 'https://twitter.com/' + username,
         })
 
-    return util.render_proxy_homepage(SERVICE_NAME, **params)
+    return util.render_proxy_homepage(**params)
 
 
 @twitter.route('/twitter/authorize', methods=['POST'])
@@ -75,11 +76,12 @@ def authorize():
 def callback():
     try:
         callback_uri = url_for('.callback', _external=True)
-        account, error = process_callback(callback_uri)
+        result = process_callback(callback_uri)
         if 'error' in result:
             flash(result['error'], category='danger')
             return redirect(url_for('views.index'))
 
+        account = result['account']
         return redirect(url_for('views.setup_account', service=SERVICE_NAME,
                                 user_id=account.user_id))
 
@@ -111,7 +113,7 @@ def process_callback(callback_uri):
     verifier = request.args.get('oauth_verifier')
     if not verifier:
         # user declined
-        return None, 'Twitter authorization declined'
+        return {'error': 'Twitter authorization declined'}
 
     request_token = session.get('oauth_token')
     request_token_secret = session.get('oauth_token_secret')
@@ -141,7 +143,8 @@ def process_callback(callback_uri):
     user_info = requests.get(VERIFY_CREDENTIALS_URL, auth=auth).json()
 
     if 'errors' in user_info:
-        return None, 'Error fetching credentials %r' % user_info.get('errors')
+        return {'error': 'Error fetching credentials %r'
+                % user_info.get('errors')}
 
     user_id = user_info.get('id_str')
     username = user_info.get('screen_name')
@@ -168,11 +171,8 @@ def process_callback(callback_uri):
         site_id=account.user_id)])
 
     db.session.commit()
-    flash('Authorized {}: {}'.format(account.username, ', '.join(
-        s.domain for s in account.sites)))
     util.set_authed(account.sites)
-
-    return account, None
+    return {'account': account}
 
 
 def publish(site):
