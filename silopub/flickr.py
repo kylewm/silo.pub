@@ -221,6 +221,13 @@ def interpret_upload_response(resp):
 
 
 def publish(site):
+    def get_photo_id(original):
+        flickr_url = util.posse_post_discovery(original, FLICKR_PHOTO_RE)
+        if flickr_url:
+            m = FLICKR_PHOTO_RE.match(flickr_url)
+            if m:
+                return m.group(2)
+
     in_reply_to = request.form.get('in-reply-to')
     like_of = request.form.get('like-of')
 
@@ -229,13 +236,11 @@ def publish(site):
 
     # try to comment on a photo
     if in_reply_to:
-        m = FLICKR_PHOTO_RE.match(in_reply_to)
-        if not m:
+        photo_id = get_photo_id(in_reply_to)
+        if not photo_id:
             return util.make_publish_error_response(
                 'Could not find Flickr photo to comment on based on URL {}'
                 .format(in_reply_to))
-
-        photo_id = m.group(2)
         r = call_api_method('POST', 'flickr.photos.comments.addComment', {
             'photo_id': photo_id,
             'comment_text': desc or title,
@@ -248,13 +253,11 @@ def publish(site):
 
     # try to like a photo
     if like_of:
-        m = FLICKR_PHOTO_RE.match(like_of)
-        if not m:
+        photo_id = get_photo_id(like_of)
+        if not photo_id:
             return util.make_publish_error_response(
-                'Could not find Flickr photo to like based on URL {}'
-                .format(in_reply_to))
-
-        photo_id = m.group(2)
+                'Could not find Flickr photo to like based on original URL {}'
+                .format(like_of))
         r = call_api_method('POST', 'flickr.favorites.add', {
             'photo_id': photo_id,
         }, site=site)
