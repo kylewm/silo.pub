@@ -222,12 +222,21 @@ def interpret_upload_response(resp):
 
 def publish(site):
     def get_photo_id(original):
+        """Based on an original URL, find the Flickr syndicated URL and
+        extract the photo ID
+
+        Returns a tuple with (photo_id, photo_url)
+        """
         flickr_url = util.posse_post_discovery(original, FLICKR_PHOTO_RE)
         if flickr_url:
             m = FLICKR_PHOTO_RE.match(flickr_url)
             if m:
-                return m.group(1), m.group(2), flickr_url
-        return None, None, None
+                return m.group(2), flickr_url
+        return None, None
+
+    def get_path_alias():
+        return (site.account.user_info.get('person', {}).get('path_alias')
+                or site.account.user_id)
 
     in_reply_to = request.form.get('in-reply-to')
     like_of = request.form.get('like-of')
@@ -237,7 +246,7 @@ def publish(site):
 
     # try to comment on a photo
     if in_reply_to:
-        flickr_user, photo_id, flickr_url = get_photo_id(in_reply_to)
+        photo_id, flickr_url = get_photo_id(in_reply_to)
         if not photo_id:
             return util.make_publish_error_response(
                 'Could not find Flickr photo to comment on based on URL {}'
@@ -254,7 +263,7 @@ def publish(site):
 
     # try to like a photo
     if like_of:
-        flickr_user, photo_id, flickr_url = get_photo_id(like_of)
+        photo_id, flickr_url = get_photo_id(like_of)
         if not photo_id:
             return util.make_publish_error_response(
                 'Could not find Flickr photo to like based on original URL {}'
@@ -266,7 +275,7 @@ def publish(site):
         if result.get('stat') == 'fail':
             return util.wrap_silo_error_response(r)
         return util.make_publish_success_response(
-            flickr_url + '#liked-by-' + site.account.username, result)
+            flickr_url + '#liked-by-' + get_path_alias(), result)
 
     # otherwise we're uploading a photo
     photo_file = request.files.get('photo') or request.files.get('video')
@@ -335,6 +344,4 @@ def publish(site):
 
     return util.make_publish_success_response(
         'https://www.flickr.com/photos/{}/{}/'.format(
-            site.account.user_info.get('person', {}).get('path_alias')
-            or site.account.user_id,
-            photo_id))
+            get_path_alias(), photo_id))
