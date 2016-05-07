@@ -226,7 +226,8 @@ def publish(site):
         if flickr_url:
             m = FLICKR_PHOTO_RE.match(flickr_url)
             if m:
-                return m.group(2)
+                return m.group(1), m.group(2), flickr_url
+        return None, None, None
 
     in_reply_to = request.form.get('in-reply-to')
     like_of = request.form.get('like-of')
@@ -236,7 +237,7 @@ def publish(site):
 
     # try to comment on a photo
     if in_reply_to:
-        photo_id = get_photo_id(in_reply_to)
+        flickr_user, photo_id, flickr_url = get_photo_id(in_reply_to)
         if not photo_id:
             return util.make_publish_error_response(
                 'Could not find Flickr photo to comment on based on URL {}'
@@ -253,7 +254,7 @@ def publish(site):
 
     # try to like a photo
     if like_of:
-        photo_id = get_photo_id(like_of)
+        flickr_user, photo_id, flickr_url = get_photo_id(like_of)
         if not photo_id:
             return util.make_publish_error_response(
                 'Could not find Flickr photo to like based on original URL {}'
@@ -264,7 +265,8 @@ def publish(site):
         result = r.json()
         if result.get('stat') == 'fail':
             return util.wrap_silo_error_response(r)
-        return util.make_publish_success_response(like_of, result)
+        return util.make_publish_success_response(
+            flickr_url + '#liked-by-' + site.account.username, result)
 
     # otherwise we're uploading a photo
     photo_file = request.files.get('photo') or request.files.get('video')
