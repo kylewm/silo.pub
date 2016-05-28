@@ -121,6 +121,9 @@ def posse_post_discovery(original, regex):
     that url is returned; otherwise we fetch the source and attempt to
     look for u-syndication URLs.
     """
+    if not hasattr(regex, 'match'):
+        regex = re.compile(regex)
+
     if regex.match(original):
         return original
 

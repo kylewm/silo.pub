@@ -13,8 +13,8 @@ import re
 SERVICE_NAME = 'github'
 PERMISSION_SCOPES = 'repo'
 
-BASE_PATTERN = 'https?://(?:www\.)?github\.com/([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)/?'
-REPO_PATTERN = BASE_PATTERN + '(?:#|$)'
+BASE_PATTERN = 'https?://(?:www\.)?github\.com/([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)'
+REPO_PATTERN = BASE_PATTERN + '/?(?:#|$)'
 ISSUES_PATTERN = BASE_PATTERN + '/issues/?(?:#|$)'
 ISSUE_PATTERN = BASE_PATTERN + '/issues/(\d+)/?(?:#|$)'
 PULL_PATTERN = BASE_PATTERN + '/pull/(\d+)/?(?:#|$)'
@@ -155,6 +155,8 @@ def publish(site):
 
     in_reply_to = request.form.get('in-reply-to')
     if in_reply_to:
+        in_reply_to = util.posse_post_discovery(in_reply_to, BASE_PATTERN)
+
         repo_match = (re.match(REPO_PATTERN, in_reply_to)
                       or re.match(ISSUES_PATTERN, in_reply_to))
         issue_match = (re.match(ISSUE_PATTERN, in_reply_to)
@@ -203,6 +205,7 @@ def publish(site):
     # like a repository -- star the repository
     like_of = request.form.get('like-of')
     if like_of:
+        like_of = util.posse_post_discovery(like_of, BASE_PATTERN)
         repo_match = re.match(REPO_PATTERN, like_of)
         if repo_match:
             endpoint = 'https://api.github.com/user/starred/{}/{}'.format(
