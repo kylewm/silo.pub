@@ -176,7 +176,7 @@ def publish(site):
             data = {
                 'title': title,
                 'body': body,
-                'labels': util.get_possible_array_value('category'),
+                'labels': util.get_possible_array_value(request.form, 'category'),
             }
         # reply to an issue -- post a new comment
         elif issue_match:
