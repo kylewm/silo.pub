@@ -154,7 +154,10 @@ def process_callback(callback_uri):
     db.session.commit()
 
     util.set_authed([site])
-    return {'account': account}
+    return {
+        'account': account,
+        'site': site,
+    }
 
 
 def publish(site):
