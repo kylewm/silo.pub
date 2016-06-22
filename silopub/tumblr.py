@@ -24,11 +24,21 @@ tumblr = Blueprint('tumblr', __name__)
 def authorize():
     try:
         callback_uri = url_for('.callback', _external=True)
-        return redirect(get_authenticate_url(callback_uri))
+        return redirect(get_authorize_url(callback_uri))
     except:
         current_app.logger.exception('Starting Tumblr authorization')
         flash(html.escape(str(sys.exc_info()[0])), 'danger')
         return redirect(url_for('views.index'))
+
+
+def get_authorize_url(callback_uri, **kwargs):
+    oauth = OAuth1Session(
+        client_key=current_app.config['TUMBLR_CLIENT_KEY'],
+        client_secret=current_app.config['TUMBLR_CLIENT_SECRET'],
+        callback_uri=callback_uri)
+    r = oauth.fetch_request_token(REQUEST_TOKEN_URL)
+    session['oauth_token_secret'] = r.get('oauth_token_secret')
+    return oauth.authorization_url(AUTHORIZE_URL)
 
 
 @tumblr.route('/tumblr/callback')
