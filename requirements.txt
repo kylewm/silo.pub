@@ -1,7 +1,7 @@
 beautifulsoup4==4.5.0
 brevity==0.2.9
 Flask==0.11.1
-Flask-Session==0.2.3
+Flask-Session==0.3.0
 Flask-SQLAlchemy==2.1
 Flask-WTF==0.12
 html5lib==0.999999999
