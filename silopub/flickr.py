@@ -278,7 +278,8 @@ def publish(site):
             flickr_url + '#liked-by-' + get_path_alias(), result)
 
     # otherwise we're uploading a photo
-    photo_file = request.files.get('photo') or request.files.get('video')
+    photo_file = (request.files.get('photo') or request.files.get('photo[]')
+        or request.files.get('video') or request.files.get('video[]'))
     if not photo_file:
         return util.make_publish_error_response('Missing "photo" attachment')
 

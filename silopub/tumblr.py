@@ -120,7 +120,7 @@ def publish(site):
     type = request.form.get('h')
 
     create_post_url = CREATE_POST_URL.format(site.domain)
-    photo_file = request.files.get('photo')
+    photo_file = request.files.get('photo') or request.files.get('photo[]')
     if photo_file:
         # tumblr signs multipart in a weird way. first sign the request as if
         # it's application/x-www-form-urlencoded, then recreate the request as

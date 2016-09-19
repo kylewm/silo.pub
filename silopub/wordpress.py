@@ -172,7 +172,7 @@ def publish(site):
     }
 
     files = None
-    photo_file = request.files.get('photo')
+    photo_file = request.files.get('photo') or request.files.get('photo[]')
     if photo_file:
         # TODO support multiple files
         data['format'] = 'image'

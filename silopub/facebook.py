@@ -167,8 +167,8 @@ def publish(site):
     title = request.form.get('name')
     content = request.form.get('content[value]') or request.form.get('content')
     permalink = request.form.get('url')
-    photo_file = request.files.get('photo')
-    video_file = request.files.get('video')
+    photo_file = request.files.get('photo') or request.files.get('photo[]')
+    video_file = request.files.get('video') or request.files.get('video[]')
     location = request.form.get('location')
 
     post_data = {'access_token': site.account.token}
