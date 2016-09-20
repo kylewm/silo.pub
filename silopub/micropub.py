@@ -276,7 +276,11 @@ def micropub_endpoint():
             return err_msg, 401
 
     current_app.logger.info('Success! Publishing to %s', site)
-    return SERVICES[site.service].publish(site)
+    resp = SERVICES[site.service].publish(site)
+    if not resp:
+        return util.make_publish_error_response(
+            'Unspecified failure. Maybe an invalid or unsupported request?')
+    return resp
 
 
 def deproxyify(url):
