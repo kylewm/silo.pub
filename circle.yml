@@ -2,6 +2,10 @@ machine:
   python:
     version: 3.4.0
 
+dependencies:
+  pre:
+    - pip install --upgrade setuptools
+
 test:
   override:
     - python -m unittest discover
