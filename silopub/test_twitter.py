@@ -146,7 +146,8 @@ class TestTwitter(SiloPubTestCase):
     def test_publish_media(self, poster):
         with self.app.test_request_context():
             request.form = MultiDict({
-                # there are 23 characters remaining; not quite enough for a space + url
+                # no longer needs to be shortened now that twitter does not count the
+                # photo against us
                 'content': 'schon nach 40 minuten fast 20 mal so viele leser per #instantarticles gehabt, wie in 6 monaten per #amphtml-artikeln.',
             })
             request.files = MultiDict({
@@ -175,7 +176,7 @@ class TestTwitter(SiloPubTestCase):
                     'media': ('dish256.png', ANY, ANY),
                 }, auth=ANY),
                 call(twitter.CREATE_STATUS_URL, data={
-                    'status': 'schon nach 40 minuten fast 20 mal so viele leser per #instantarticles gehabt, wie in 6 monaten per\u2026',
+                    'status': 'schon nach 40 minuten fast 20 mal so viele leser per #instantarticles gehabt, wie in 6 monaten per #amphtml-artikeln.',
                     'media_ids': '2112',
                 }, auth=ANY)
             ])
