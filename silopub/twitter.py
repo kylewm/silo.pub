@@ -337,7 +337,6 @@ def publish(site):
 
     permalink_url = request.form.get('url')
     if media_ids:
-        format = '+'.join((format, brevity.FORMAT_MEDIA))
         data['media_ids'] = ','.join(media_ids)
 
     if content:

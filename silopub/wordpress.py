@@ -75,7 +75,7 @@ def process_callback(callback_uri):
 
     if error:
         return {'error':  'Wordpress authorization canceled or failed with '
-                'error: {}, and description: {}' .format(error, error_desc)}
+                'error: {}, and description: {}'.format(error, error_desc)}
 
     if not validate_csrf(csrf):
         return {'error': 'csrf token mismatch in wordpress callback.'}
