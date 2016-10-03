@@ -1,13 +1,10 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__),  '..'))
-
-import json
 import pytest
-import silopub
-import tempfile
-import unittest
-import urllib
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+import silopub  # NOQA
 
 
 class TestConfig:

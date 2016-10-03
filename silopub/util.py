@@ -1,11 +1,9 @@
 import datetime
 import random
 import re
-import tempfile
 import urllib.parse
 
 from flask import flash, current_app, make_response, url_for, jsonify, session
-from flask import request
 from requests.exceptions import HTTPError, SSLError
 from werkzeug.datastructures import FileStorage
 import jwt
@@ -114,8 +112,8 @@ def get_complex_content(data):
             lines.append('<p>{} <a class="u-{}" href="{}">{}</a></p>'.format(
                 headline, prop, target, prettify_url(target)))
 
-    content = (data.get('content[html]') or data.get('content')
-               or data.get('summary'))
+    content = (data.get('content[html]') or data.get('content') or
+               data.get('summary'))
     if content:
         lines.append(content)
 
@@ -181,12 +179,12 @@ def render_proxy_homepage(user_name='', user_url='', user_photo='',
         </div>
     </body>
 </html>""".format(
-    auth=url_for('micropub.indieauth', _external=True),
-    token=url_for('micropub.token_endpoint', _external=True),
-    micropub=url_for('micropub.micropub_endpoint', _external=True),
-    user_name=user_name, user_url=user_url, user_photo=user_photo,
-    service_name=service_name, service_url=service_url,
-    service_photo=service_photo)
+        auth=url_for('micropub.indieauth', _external=True),
+        token=url_for('micropub.token_endpoint', _external=True),
+        micropub=url_for('micropub.micropub_endpoint', _external=True),
+        user_name=user_name, user_url=user_url, user_photo=user_photo,
+        service_name=service_name, service_url=service_url,
+        service_photo=service_photo)
 
 
 def make_publish_success_response(location, data=None):
