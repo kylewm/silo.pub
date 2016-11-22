@@ -22,4 +22,4 @@ Werkzeug==0.11.11
 wheel==0.29.0
 WTForms==2.1
 pytest==3.0.4
-pytest-mock==1.4.0
+pytest-mock==1.5.0
