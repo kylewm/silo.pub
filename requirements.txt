@@ -13,7 +13,7 @@ mf2py==1.0.5
 psycopg2==2.6.2
 PyJWT==1.4.2
 redis==2.10.5
-requests==2.12.4
+requests==2.12.5
 requests-oauthlib==0.7.0
 six==1.10.0
 SQLAlchemy==1.1.5
