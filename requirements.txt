@@ -21,5 +21,5 @@ uWSGI==2.0.14
 Werkzeug==0.12
 wheel==0.29.0
 WTForms==2.1
-pytest==3.0.6
+pytest==3.0.7
 pytest-mock==1.5.0
