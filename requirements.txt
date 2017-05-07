@@ -1,4 +1,4 @@
-beautifulsoup4==4.5.3
+beautifulsoup4==4.6.0
 brevity==0.2.14
 Flask==0.12.1
 Flask-Session==0.3.1
