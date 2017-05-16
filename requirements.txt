@@ -1,6 +1,6 @@
 beautifulsoup4==4.6.0
 brevity==0.2.14
-Flask==0.12.1
+Flask==0.12.2
 Flask-Session==0.3.1
 Flask-SQLAlchemy==2.2
 Flask-WTF==0.14.2
@@ -18,7 +18,7 @@ requests-oauthlib==0.8.0
 six==1.10.0
 SQLAlchemy==1.1.9
 uWSGI==2.0.15
-Werkzeug==0.12.1
+Werkzeug==0.12.2
 wheel==0.29.0
 WTForms==2.1
 pytest==3.0.7
