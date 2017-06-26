@@ -1,4 +1,5 @@
 from flask import Flask
+from raven.contrib.flask import Sentry
 from silopub.views import views
 from silopub import wordpress
 from silopub import blogger
@@ -15,6 +16,7 @@ import logging
 import logging.handlers
 import sys
 
+
 MAIL_FORMAT = '''\
 Message type:       %(levelname)s
 Location:           %(pathname)s:%(lineno)d
@@ -26,6 +28,8 @@ Message:
 
 %(message)s
 '''
+
+sentry = Sentry()
 
 
 def create_app(config_path='../silopub.cfg', configurator=None):
@@ -67,6 +71,8 @@ def configure_logging(app):
 
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(logging.StreamHandler(sys.stdout))
+
+    sentry.init_app(app, dsn=app.config.get('SENTRY_DSN'), logging=True, level=logging.WARNING)
 
     recipients = app.config.get('ADMIN_EMAILS')
     if recipients:
