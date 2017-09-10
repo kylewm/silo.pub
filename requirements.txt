@@ -19,7 +19,7 @@ six==1.10.0
 SQLAlchemy==1.1.14
 uWSGI==2.0.15
 Werkzeug==0.12.2
-wheel==0.29.0
+wheel==0.30.0
 WTForms==2.1
 pytest==3.2.2
 pytest-mock==1.6.2
