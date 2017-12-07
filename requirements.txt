@@ -18,7 +18,7 @@ requests-oauthlib==0.8.0
 six==1.11.0
 SQLAlchemy==1.1.15
 uWSGI==2.0.15
-Werkzeug==0.12.2
+Werkzeug==0.13
 wheel==0.30.0
 WTForms==2.1
 pytest==3.3.1
