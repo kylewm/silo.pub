@@ -21,6 +21,6 @@ uWSGI==2.0.16
 Werkzeug==0.14.1
 wheel==0.30.0
 WTForms==2.1
-pytest==3.4.0
+pytest==3.4.1
 pytest-mock==1.7.0
 raven[flask]
